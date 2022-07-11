@@ -12,4 +12,6 @@ example:
 	docker-compose run ubuntu python3 marklify.py books/CPython_Internals.pdf && docker-compose down
 ```
 ### Features
-Boris can convert your PDF file to Markdown and he supports images! But Text extracts not carefule yet, sorry.
+- Boris can convert your PDF file to Markdown and he supports images! But Text extracts not carefule yet, sorry.
+- Python3 support
+- Great works inside of Docker image. Outside fitz lib on my M1 Mac was not works. Don't f*ckn know why :(
