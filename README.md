@@ -4,9 +4,9 @@
 ---
 
 ### Quick start
-```bash
-$make build
-$make example
+```makefile
+make build
+make example
 ```
 ### Features
 - Boris can convert your PDF file to Markdown and he supports images! But Text extracts not carefule yet, sorry.
