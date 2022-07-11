@@ -4,7 +4,7 @@
 ---
 
 ### Quick start
-```makefile
+```
 make build
 make example
 ```
