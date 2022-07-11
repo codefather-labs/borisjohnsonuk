@@ -5,11 +5,9 @@
 
 ### Quick start
 ```makefile
-build:
-	docker-compose build
+make build
 
-example:
-	docker-compose run ubuntu python3 marklify.py books/CPython_Internals.pdf && docker-compose down
+make example
 ```
 ### Features
 - Boris can convert your PDF file to Markdown and he supports images! But Text extracts not carefule yet, sorry.
