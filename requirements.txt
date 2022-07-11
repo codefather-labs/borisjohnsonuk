@@ -1,0 +1,8 @@
+bpython==0.18
+Cython==0.29.28
+fitz==0.0.1.dev2
+Pillow==9.0.1
+Pygments==2.3.1
+PyMuPDF==1.19.5
+PyPDF2==1.26.0
+# translate==3.6.1
