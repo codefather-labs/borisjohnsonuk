@@ -11,3 +11,5 @@ build:
 example:
 	docker-compose run ubuntu python3 marklify.py books/CPython_Internals.pdf && docker-compose down
 ```
+### Features
+Boris can convert your PDF file to Markdown and he supports images! But Text extracts not carefule yet, sorry.
