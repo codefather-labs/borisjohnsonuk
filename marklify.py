@@ -260,7 +260,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    fname = args.pdf_path  # get filename from command line
+    fname = os.path.abspath(args.pdf_path)  # get filename from command line
     dir_name = "".join(fname.split(".")[:-1]).replace("\\", "")
     dir_name = dir_name.replace("'", "")
     dir_name = dir_name.replace("(", "")
