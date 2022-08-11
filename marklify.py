@@ -1,7 +1,9 @@
 import os
 import json
+import argparse
 
 import sys, fitz  # import the bindings
+from copy import deepcopy
 
 from fitz import Page
 from fitz.utils import get_image_info
@@ -9,20 +11,7 @@ from typing import List, Optional, Tuple
 
 from libtypes import PDFContentType
 
-fname = sys.argv[1]  # get filename from command line
-dir_name = "".join(fname.split(".")[:-1]).replace("\\", "")
-dir_name = dir_name.replace("'", "")
-dir_name = dir_name.replace("(", "")
-dir_name = dir_name.replace(")", "")
-dir_name = dir_name.replace(' ', '_')
-dir_name = f"pages/{''.join(dir_name.split('/')[1:])}"
-doc: fitz.Document = fitz.open(fname)  # open document
-
-if not os.path.isdir('pages'):
-    os.mkdir('pages')
-
-if not os.path.isdir('pages/images'):
-    os.mkdir('pages/images')
+font_sizes = set()
 
 
 def get_image_from_bytes(image: bytes, filename: str, ext: str):
@@ -31,21 +20,6 @@ def get_image_from_bytes(image: bytes, filename: str, ext: str):
     img.write(image)
     img.close()
     return f"images/{filename}.{ext}"
-
-
-def formatted_text(text: str, size: int, flags: str, font: str):
-    if 'monospaced' in flags:
-        return f"""
-        %s \n""" % text
-
-    if flags == 'serifed, proportional, bold':
-        if size == 15:
-            return "\n%s \n\n" % f"#{text}"
-
-        if size == 12:
-            return "\n%s \n\n" % f"##{text}"
-
-    return text
 
 
 def formatted_image(imagepath: str, description: str):
@@ -100,8 +74,114 @@ def get_image_by_block_number(page: Page, block_number: int):
     return None
 
 
-def handle_block(page: Page, block) -> List[str]:
+def prepare_buf_for_return(buf: List = None):
+    buf = deepcopy(buf)
+    return buf
+
+
+def fetch_result_content(content: list):
     result = []
+    last_font_flags = None
+    text_buf = []
+    text_buf_is_ready_for_return = False
+
+    def text_process(text: str, font_flags: str, font_size: int):
+        nonlocal last_font_flags
+        nonlocal text_buf
+        nonlocal text_buf_is_ready_for_return
+
+        title_signature_map = {
+            31: "#",
+            28: "#",
+            25: "###",
+            18: "###",
+            17: "###",
+            16: "####",
+            15: "####",
+            14: "######",
+            12: "######",
+        }
+        title = title_signature_map.get(font_size)
+        is_title_text = bool(title)
+        if is_title_text:
+            return f"{title} {text}\n"
+
+        # степень "^" X^2^
+        # основание "~" H~2~O
+        tags_signature_map = {
+            "serifed": "",
+            "italic": "*",
+            "bold": "**",
+            "monospaced": "`",
+            "code": "```",  # CUSTOM
+            "blockquote": ">",
+            "strikethrough": "~~",
+            "highlight": "==",
+            "superscript": "^"
+        }
+        is_tag = lambda x: True if x in tags_signature_map.values() else False
+
+        font_tags_map = {
+            "serifed, proportional": tags_signature_map["serifed"],
+            "serifed, proportional, bold": tags_signature_map["bold"],
+            "italic, serifed, proportional": tags_signature_map["italic"],
+            "italic, serifed, proportional, bold": tags_signature_map["bold"],
+            "serifed, monospaced": tags_signature_map["monospaced"],
+            "italic, serifed, monospaced": tags_signature_map["monospaced"],
+            "serifed, monospaced, bold": tags_signature_map["monospaced"],
+            "italic, serifed, monospaced, bold": tags_signature_map["monospaced"],
+            "superscript, serifed, proportional": tags_signature_map["superscript"]
+        }
+
+        last_tag = lambda: font_tags_map[last_font_flags] if last_font_flags else None
+        input_tag = lambda: font_tags_map[font_flags]
+
+        # FIXME MONOSPACED
+        # if 'monospaced' in font_flags:
+        #     if not text_buf:
+        #         text_buf.append(input_tag())
+        #
+        #     text_buf.append(text)
+        #
+        #     return None
+        #
+        # if not 'monospaced' in font_flags and text_buf:
+        #     text_buf.append(last_tag())
+        #     result_buf = text_buf
+        #
+        #     text_buf.clear()
+        #     assert text_buf != result_buf
+        #
+        #     text = f'{" ".join(result_buf)}\n {text}'
+
+        closed_text_buf = text
+
+        return f"{input_tag()}{closed_text_buf}{input_tag()}"
+
+    for c in content:
+        t = c['type']
+        cnt = c['content']
+
+        if t == 'image':
+            result.append(cnt)
+
+        elif t == 'text':
+            text_result = text_process(
+                text=cnt['text'],
+                font_flags=cnt['flags'],
+                font_size=cnt['size']
+            )
+
+            if text_result:
+                result.append(
+                    text_result
+                )
+
+    return result
+
+
+def handle_block(doc: fitz.Document, page: Page, block) -> List[str]:
+    content = []
 
     for block in block['blocks']:
         block_number = block['number']
@@ -118,7 +198,10 @@ def handle_block(page: Page, block) -> List[str]:
                 imagepath = get_image_from_bytes(
                     src_image['image'], image_name, src_image['ext']
                 )
-                result.append(formatted_image(imagepath, image_name))
+                content.append({
+                    "type": "image",
+                    "content": formatted_image(imagepath, image_name)
+                })
 
         elif block_type == PDFContentType.TEXT:
             for line in block['lines']:
@@ -126,23 +209,28 @@ def handle_block(page: Page, block) -> List[str]:
                     font = span['font']
                     font_flags = flags_decomposer(span['flags'])
                     font_size = int(span['size'])
+                    text = span['text']
 
-                    result.append(
-                        formatted_text(
-                            span['text'],
-                            font_size,
-                            font_flags,
-                            font
-                        )
-                    )
+                    font_sizes.add(font_size)
+
+                    content.append({
+                        "type": "text",
+                        "content": {
+                            "text": text,
+                            "size": font_size,
+                            "flags": font_flags,
+                            "font": font,
+                        }
+                    })
         else:
             exit(f"-----------UNKNOWN BLOCK TYPE------------\n\n"
                  f"{block}"
                  f"-----------------------------------------")
-    return result
+
+    return fetch_result_content(content)
 
 
-def create_md_page(page: fitz.Page, with_translating: bool = False):
+def create_md_page(doc: fitz.Document, page: fitz.Page, with_translating: bool = False):
     page: fitz.Page
 
     flags = (
@@ -159,29 +247,53 @@ def create_md_page(page: fitz.Page, with_translating: bool = False):
     # https://github.com/pymupdf/PyMuPDF/blob/master/fitz/utils.py#L472 !!!!!!!!!!!!!!!!!
     blocks: dict = json.loads(page.get_displaylist().get_textpage(flags).extractJSON())
 
-    markdown_dict: List[str] = handle_block(page, blocks)
+    markdown_dict: List[str] = handle_block(doc, page, blocks)
     markdown_string = " ".join(markdown_dict)
-    if with_translating:
-        markdown_string = translator.translate(markdown_string)
+    # if with_translating:
+    #     markdown_string = translator.translate(markdown_string)
     return markdown_string
 
 
-result = []
-pages = doc.page_count
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("pdf_path")
 
-result_path = f'pages/'
-if not os.path.isdir(result_path):
-    os.mkdir(result_path)
+    args = parser.parse_args()
 
-for page in doc:
+    fname = args.pdf_path  # get filename from command line
+    dir_name = "".join(fname.split(".")[:-1]).replace("\\", "")
+    dir_name = dir_name.replace("'", "")
+    dir_name = dir_name.replace("(", "")
+    dir_name = dir_name.replace(")", "")
+    dir_name = dir_name.replace(' ', '_')
+    dir_name = f"pages/{''.join(dir_name.split('/')[1:])}"
     try:
-        result.append((page.number, create_md_page(page)))
-        print(f"Page: {page.number} from {pages} done 👌")
-    except Exception as e:
-        print(e)
+        doc: fitz.Document = fitz.open(os.path.abspath(fname))  # open document
+    except RuntimeError as e:
+        exit()
 
-    del page
+    if not os.path.isdir('pages'):
+        os.mkdir('pages')
 
-save_result(result, filepath=result_path)
-print(f"{fname.split('/')[1]} converting success 👌")
-print(f"Result is there -> {result_path}")
+    if not os.path.isdir('pages/images'):
+        os.mkdir('pages/images')
+
+    result = []
+    pages = doc.page_count
+
+    result_path = f'pages/'
+    if not os.path.isdir(result_path):
+        os.mkdir(result_path)
+
+    for page in doc:
+        try:
+            result.append((page.number, create_md_page(doc, page)))
+            print(f"Page: {page.number} from {pages} done 👌")
+        except Exception as e:
+            print(e)
+
+        del page
+
+    save_result(result, filepath=result_path)
+    print(f"{fname.split('/')[1]} converting success 👌")
+    print(f"Result is there -> {result_path}")
