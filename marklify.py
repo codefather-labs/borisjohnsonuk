@@ -261,27 +261,22 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     fname = os.path.abspath(args.pdf_path)  # get filename from command line
-    dir_name = "".join(fname.split(".")[:-1]).replace("\\", "")
-    dir_name = dir_name.replace("'", "")
-    dir_name = dir_name.replace("(", "")
-    dir_name = dir_name.replace(")", "")
-    dir_name = dir_name.replace(' ', '_')
-    dir_name = f"pages/{''.join(dir_name.split('/')[1:])}"
+    result_path = 'pages'
     try:
         doc: fitz.Document = fitz.open(os.path.abspath(fname))  # open document
     except RuntimeError as e:
         exit()
 
-    if not os.path.isdir('pages'):
-        os.mkdir('pages')
+    if not os.path.isdir(result_path):
+        os.mkdir(result_path)
 
-    if not os.path.isdir('pages/images'):
-        os.mkdir('pages/images')
+    images_path = os.path.join(result_path, 'images')
+    if not os.path.isdir(images_path):
+        os.mkdir(images_path)
 
     result = []
     pages = doc.page_count
 
-    result_path = f'pages/'
     if not os.path.isdir(result_path):
         os.mkdir(result_path)
 
