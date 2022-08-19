@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from io import TextIOWrapper
 from typing import Optional, Union, List
 
-from interfaces import AbstractNode, AbstractTag, AbstractArea
+from interfaces import AbstractNode, AbstractTag, AbstractArea, AbstractDoublyLinkedList
 from fonts import FONT_MAP
 
 
@@ -27,18 +27,9 @@ class ContentNode(AbstractNode):
     def get_previous_node(self): return self.__prev
 
 
-class DoublyLinkedList(Sequence):
+class DoublyLinkedList(AbstractDoublyLinkedList):
     def __init__(self, nodes: List[ContentNode]):
         self.nodes: List[ContentNode] = nodes
-
-    def __getitem__(self, index: int) -> ContentNode:
-        return self.nodes[index]
-
-    def __len__(self) -> int:
-        return len(self.nodes)
-
-    def pop(self, index: int):
-        return self.nodes.pop(index)
 
     @staticmethod
     def from_list(data: list):
@@ -59,17 +50,20 @@ class DoublyLinkedList(Sequence):
 
         return DoublyLinkedList(nodes=nodes)
 
+    def pop(self, index: int):
+        return self.nodes.pop(index)
+
+    def __getitem__(self, index: int) -> ContentNode:
+        return self.nodes[index]
+
+    def __len__(self) -> int:
+        return len(self.nodes)
+
 
 class Area(AbstractArea):
     def __init__(self, tag: AbstractTag, chunk: List[ContentNode] = None):
         self.chunk: List[ContentNode] = chunk if chunk else []
         self.tag: AbstractTag = tag
-
-    def __len__(self) -> int:
-        return len(self.chunk)
-
-    def __getitem__(self, index: int):
-        return self.chunk[index]
 
     def append_node(self, node: ContentNode):
         self.chunk.append(node)
@@ -101,6 +95,12 @@ class Area(AbstractArea):
 
         return areas
 
+    def __len__(self) -> int:
+        return len(self.chunk)
+
+    def __getitem__(self, index: int):
+        return self.chunk[index]
+
 
 class FileDescriptor:
     def __init__(self, filepath: str = None, with_clearing: bool = False):
@@ -119,8 +119,8 @@ class FileDescriptor:
         self.writer.write(data)
         self.writer.close()
 
-    def __enter__(self):
+    def __enter__(self):  # ???
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb):  # ???
         return self

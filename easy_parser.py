@@ -11,7 +11,7 @@ from fitz import Page
 from fitz.utils import get_image_info
 from typing import List, Optional, Tuple, Dict
 
-from processors import TagProcessor
+from processors import ContentProcessor
 from libtypes import PDFContentType
 
 font_sizes = set()
@@ -262,7 +262,7 @@ def handle_block(doc: fitz.Document, page: Page, block) -> List[str]:
     # writer = FileController(filepath='processors/content.json', with_clearing=True)
     # writer.write(json.dumps(content, indent=4))
 
-    tag_processor = TagProcessor(content=content)
+    tag_processor = ContentProcessor(content=content)
     content = tag_processor.fetch_content()
 
     return content

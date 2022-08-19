@@ -4,7 +4,7 @@ from typing import Optional, List
 
 # TODO DEPRECATED
 # TODO NEED FIX
-class TextProcessor:
+class ContentProcessor:
     def __init__(self):
         self.is_wait_for_code_tag_close = False
         self.code = []
@@ -156,4 +156,4 @@ class TextProcessor:
         return result
 
 
-text_processor = TextProcessor()
+text_processor = ContentProcessor()

@@ -10,7 +10,7 @@ from utils import (
 from fonts import FONT_MAP
 
 
-class TagProcessor:
+class ContentProcessor:
 
     def __init__(self, content: DoublyLinkedList):
         self.content: DoublyLinkedList = content
@@ -77,71 +77,85 @@ class TagProcessor:
         # self.content = areas ??? может так ?
 
         for area in areas:
-            print(area)
-        #     for node in area:
-        #         ...
+            area: Area
 
-        for node in self.content:
-            node: ContentNode
+            # на этом этапе не понятно нужен ли код ниже в текущей реализации
+            # поскольку у нас теперь есть Area -
+            # последовательность из DoublyLinkedList[ContentNode]...
+            # по идее нам достаточно здесь просто
+            # написать обработчик для area (area.render()), который бы рендерил текст
+            # в зависимости от area.tag
+            # результат area.render() кладем в self.result и возвращаем его...
 
-            if node.content_type == 'image':
-                # TODO
-                # self.process_image(node=node)
-                continue
+            # Код ниже может помочь в форматировании чанков, но это не точно
 
-            last_font_tag: Optional[AbstractTag] = \
-                FONT_MAP[
-                    node.get_previous_node.body.get('flags')
-                ] if node.get_previous_node else None
+            for node in area.chunk:
+                node: ContentNode
 
-            # я последовательно перебираю весь текст и при несоответствии текущего шрифта с последним,
+                print(area, node)
 
-            current_font_tag: AbstractTag = FONT_MAP[node.body.get('flags')]
-            text: str = node.body.get('text')
+                if node.content_type == 'image':
+                    # TODO
+                    # self.process_image(node=node)
+                    continue
 
-            if text.isspace():
-                space_count = text.count(' ')
-                if space_count == 1:
-                    self.result.append(' ')
+                last_font_tag: Optional[AbstractTag] = \
+                    FONT_MAP[
+                        node.get_previous_node.body.get('flags')
+                    ] if node.get_previous_node else None
 
-                elif space_count > 1:
-                    self.result.append(f"\n{' ' * space_count}")
+                # я последовательно перебираю весь текст и
+                # при несоответствии текущего шрифта с последним,
 
-                continue
+                current_font_tag: AbstractTag = FONT_MAP[node.body.get('flags')]
+                text: str = node.body.get('text')
 
-            open_tag: Optional[str] = self.get_open_tag(
-                current=current_font_tag,
-                last=last_font_tag,
-            )
+                if text.isspace():
+                    space_count = text.count(' ')
+                    if space_count == 1:
+                        self.result.append(' ')
 
-            close_tag: Optional[str] = self.get_close_tag(
-                current=current_font_tag,
-                last=last_font_tag,
-            )
-            result_string = text
+                    elif space_count > 1:
+                        self.result.append(f"\n{' ' * space_count}")
 
-            if not isinstance(open_tag, NoneType):
-                result_string = f"{open_tag}{result_string}"
+                    continue
 
-            if not isinstance(close_tag, NoneType):
-                result_string = f"{result_string}{close_tag}"
+                open_tag: Optional[str] = self.get_open_tag(
+                    current=current_font_tag,
+                    last=last_font_tag,
+                )
 
-            # добавляю в result текущий текст c его открытым и закрытым тегом
-            # (их может не быть если текущий текст не является открывающим или закрывающим свой тег)
+                close_tag: Optional[str] = self.get_close_tag(
+                    current=current_font_tag,
+                    last=last_font_tag,
+                )
+                result_string = text
 
-            self.result.append(result_string)
+                if not isinstance(open_tag, NoneType):
+                    result_string = f"{open_tag}{result_string}"
+
+                if not isinstance(close_tag, NoneType):
+                    result_string = f"{result_string}{close_tag}"
+
+                # добавляю в result текущий текст c
+                # его открытым и закрытым тегом
+                # (их может не быть если текущий текст
+                # не является открывающим или закрывающим свой тег)
+
+                self.result.append(result_string)
 
         return self.result
 
 
-def load_content():
+def load_content() -> list:
     file = open('content.json', 'r')
     data = file.read()
     file.close()
-    return json.loads(data)
+    return list(json.loads(data))
 
 
-processor = TagProcessor(content=DoublyLinkedList.from_list(data=load_content()))
+cnt: DoublyLinkedList = DoublyLinkedList.from_list(data=load_content())
+processor = ContentProcessor(content=cnt)
 result_content = processor.fetch_content()
 
 writer = FileDescriptor(with_clearing=True)

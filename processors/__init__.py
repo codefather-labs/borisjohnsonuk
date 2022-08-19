@@ -1,1 +1,1 @@
-from .processor import TagProcessor
+from .processor import ContentProcessor

@@ -17,12 +17,12 @@ class AbstractNode(ABC):
     def set_previous_node(self, node: object): raise NotImplementedError
 
 
-class AbstractLinkedList(Sequence, ABC):
+class AbstractDoublyLinkedList(Sequence, ABC):
     nodes: List[AbstractNode]
 
     @staticmethod
     @abstractmethod
-    def from_list(data: list) -> Sequence: raise NotImplementedError
+    def from_list(data: list): raise NotImplementedError
 
 
 class TagRenderFormat(Enum):
@@ -54,4 +54,4 @@ class AbstractArea(ABC, Sequence):
 
     @staticmethod
     @abstractmethod
-    def collect_areas(content: AbstractLinkedList): ...
+    def collect_areas(content: AbstractDoublyLinkedList): ...
