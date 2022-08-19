@@ -4,11 +4,14 @@ import argparse
 
 import sys, fitz  # import the bindings
 from copy import deepcopy
+from io import TextIOWrapper
+from pprint import pprint
 
 from fitz import Page
 from fitz.utils import get_image_info
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 
+from processors import TagProcessor
 from libtypes import PDFContentType
 
 font_sizes = set()
@@ -46,6 +49,33 @@ def save_html_file(string: str, filepath: str):
         f.write(string)
 
 
+class FileController:
+    def __init__(self, filepath: str = None, with_clearing: bool = False):
+        self.file = filepath if filepath else 'result.md'
+
+        if with_clearing:
+            os.system(f'rm -rf {self.file}')
+
+        if not os.path.exists(self.file):
+            os.system(f'touch {self.file}')
+
+        self.writer: Optional[TextIOWrapper] = None
+
+    def write(self, data: str):
+        self.writer = open(self.file, 'a')
+        self.writer.write(data)
+        self.writer.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return self
+
+
+writer = FileController(with_clearing=True)
+
+
 def flags_decomposer(flags):
     """Make font flags human readable."""
     l = []
@@ -79,106 +109,106 @@ def prepare_buf_for_return(buf: List = None):
     return buf
 
 
-def fetch_result_content(content: list):
-    # https://pymupdf.readthedocs.io/en/latest/module.html#extracting-fonts-and-images
-    result = []
-    last_font_flags = None
-    text_buf = []
-    text_buf_is_ready_for_return = False
-
-    def text_process(text: str, font_flags: str, font_size: int):
-        nonlocal last_font_flags
-        nonlocal text_buf
-        nonlocal text_buf_is_ready_for_return
-
-        title_signature_map = {
-            31: "#",
-            28: "#",
-            25: "###",
-            18: "###",
-            17: "###",
-            16: "####",
-            15: "####",
-            14: "######",
-            12: "######",
-        }
-        title = title_signature_map.get(font_size)
-        is_title_text = bool(title)
-        if is_title_text:
-            return f"{title} {text}\n"
-
-        # степень "^" X^2^
-        # основание "~" H~2~O
-        tags_signature_map = {
-            "serifed": "",
-            "italic": "*",
-            "bold": "**",
-            "monospaced": "`",
-            "code": "```",  # CUSTOM
-            "blockquote": ">",
-            "strikethrough": "~~",
-            "highlight": "==",
-            "superscript": "^"
-        }
-        is_tag = lambda x: True if x in tags_signature_map.values() else False
-
-        font_tags_map = {
-            "serifed, proportional": tags_signature_map["serifed"],
-            "serifed, proportional, bold": tags_signature_map["bold"],
-            "italic, serifed, proportional": tags_signature_map["italic"],
-            "italic, serifed, proportional, bold": tags_signature_map["bold"],
-            "serifed, monospaced": tags_signature_map["monospaced"],
-            "italic, serifed, monospaced": tags_signature_map["monospaced"],
-            "serifed, monospaced, bold": tags_signature_map["monospaced"],
-            "italic, serifed, monospaced, bold": tags_signature_map["monospaced"],
-            "superscript, serifed, proportional": tags_signature_map["superscript"]
-        }
-
-        last_tag = lambda: font_tags_map[last_font_flags] if last_font_flags else None
-        input_tag = lambda: font_tags_map[font_flags]
-
-        # FIXME MONOSPACED
-        # if 'monospaced' in font_flags:
-        #     if not text_buf:
-        #         text_buf.append(input_tag())
-        #
-        #     text_buf.append(text)
-        #
-        #     return None
-        #
-        # if not 'monospaced' in font_flags and text_buf:
-        #     text_buf.append(last_tag())
-        #     result_buf = text_buf
-        #
-        #     text_buf.clear()
-        #     assert text_buf != result_buf
-        #
-        #     text = f'{" ".join(result_buf)}\n {text}'
-
-        closed_text_buf = text
-
-        return f"{input_tag()}{closed_text_buf}{input_tag()}"
-
-    for c in content:
-        t = c['type']
-        cnt = c['content']
-
-        if t == 'image':
-            result.append(cnt)
-
-        elif t == 'text':
-            text_result = text_process(
-                text=cnt['text'],
-                font_flags=cnt['flags'],
-                font_size=cnt['size']
-            )
-
-            if text_result:
-                result.append(
-                    text_result
-                )
-
-    return result
+# def fetch_result_content(content: list):
+#     # https://pymupdf.readthedocs.io/en/latest/module.html#extracting-fonts-and-images
+#     result = []
+#     last_font_flags = None
+#     text_buf = []
+#     text_buf_is_ready_for_return = False
+#
+#     def text_process(text: str, font_flags: str, font_size: int):
+#         nonlocal last_font_flags
+#         nonlocal text_buf
+#         nonlocal text_buf_is_ready_for_return
+#
+#         title_signature_map = {
+#             31: "#",
+#             28: "#",
+#             25: "###",
+#             18: "###",
+#             17: "###",
+#             16: "####",
+#             15: "####",
+#             14: "######",
+#             12: "######",
+#         }
+#         title = title_signature_map.get(font_size)
+#         is_title_text = bool(title)
+#         if is_title_text:
+#             return f"{title} {text}\n"
+#
+#         # степень "^" X^2^
+#         # основание "~" H~2~O
+#         tags_signature_map = {
+#             "serifed": "",
+#             "italic": "*",
+#             "bold": "**",
+#             "monospaced": "`",
+#             "code": "```",  # CUSTOM
+#             "blockquote": ">",
+#             "strikethrough": "~~",
+#             "highlight": "==",
+#             "superscript": "^"
+#         }
+#         is_tag = lambda x: True if x in tags_signature_map.values() else False
+#
+#         font_tags_map = {
+#             "serifed, proportional": tags_signature_map["serifed"],
+#             "serifed, proportional, bold": tags_signature_map["bold"],
+#             "italic, serifed, proportional": tags_signature_map["italic"],
+#             "italic, serifed, proportional, bold": tags_signature_map["bold"],
+#             "serifed, monospaced": tags_signature_map["monospaced"],
+#             "italic, serifed, monospaced": tags_signature_map["monospaced"],
+#             "serifed, monospaced, bold": tags_signature_map["monospaced"],
+#             "italic, serifed, monospaced, bold": tags_signature_map["monospaced"],
+#             "superscript, serifed, proportional": tags_signature_map["superscript"]
+#         }
+#
+#         last_tag = lambda: font_tags_map[last_font_flags] if last_font_flags else None
+#         input_tag = lambda: font_tags_map[font_flags]
+#
+#         # FIXME MONOSPACED
+#         # if 'monospaced' in font_flags:
+#         #     if not text_buf:
+#         #         text_buf.append(input_tag())
+#         #
+#         #     text_buf.append(text)
+#         #
+#         #     return None
+#         #
+#         # if not 'monospaced' in font_flags and text_buf:
+#         #     text_buf.append(last_tag())
+#         #     result_buf = text_buf
+#         #
+#         #     text_buf.clear()
+#         #     assert text_buf != result_buf
+#         #
+#         #     text = f'{" ".join(result_buf)}\n {text}'
+#
+#         closed_text_buf = text
+#
+#         return f"{input_tag()}{closed_text_buf}{input_tag()}"
+#
+#     for c in content:
+#         t = c['type']
+#         cnt = c['content']
+#
+#         if t == 'image':
+#             result.append(cnt)
+#
+#         elif t == 'text':
+#             text_result = text_process(
+#                 text=cnt['text'],
+#                 font_flags=cnt['flags'],
+#                 font_size=cnt['size']
+#             )
+#
+#             if text_result:
+#                 result.append(
+#                     text_result
+#                 )
+#
+#     return result
 
 
 def handle_block(doc: fitz.Document, page: Page, block) -> List[str]:
@@ -199,10 +229,11 @@ def handle_block(doc: fitz.Document, page: Page, block) -> List[str]:
                 imagepath = get_image_from_bytes(
                     src_image['image'], image_name, src_image['ext']
                 )
-                content.append({
+                image = {
                     "type": "image",
                     "content": formatted_image(imagepath, image_name)
-                })
+                }
+                content.append(image)
 
         elif block_type == PDFContentType.TEXT:
             for line in block['lines']:
@@ -228,7 +259,13 @@ def handle_block(doc: fitz.Document, page: Page, block) -> List[str]:
                  f"{block}"
                  f"-----------------------------------------")
 
-    return fetch_result_content(content)
+    # writer = FileController(filepath='processors/content.json', with_clearing=True)
+    # writer.write(json.dumps(content, indent=4))
+
+    tag_processor = TagProcessor(content=content)
+    content = tag_processor.fetch_content()
+
+    return content
 
 
 def create_md_page(doc: fitz.Document,
@@ -281,8 +318,6 @@ if __name__ == '__main__':
 
     if not os.path.isdir(result_path):
         os.mkdir(result_path)
-
-    # result.append((18, create_md_page(doc, doc[18])))
 
     for page in doc:
         try:
