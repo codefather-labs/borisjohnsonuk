@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy, copy
 from typing import Optional
 
 from interfaces import AbstractTag
@@ -9,8 +10,8 @@ from utils import (
 
 class ContentProcessor:
 
-    def __init__(self, content: DoublyLinkedList):
-        self.content: DoublyLinkedList = content
+    def __init__(self, content: DoublyLinkedList[ContentNode]):
+        self.content: DoublyLinkedList[ContentNode] = content
         self.result = []
 
     @staticmethod
@@ -60,28 +61,30 @@ class ContentProcessor:
         # TODO пример группировки по Arena ниже
         #   эта идея не тестировалась. воспринимать как псевдокод
 
-        areas = Arena.from_list(content=self.content)
-        # self.content = areas ??? может так ?
+        arenas = Arena.from_list(content=copy(self.content))
+        # self.content = arenas ??? может так ?
 
-        for area in areas:
-            area: Arena
+        for arena in arenas:
+            arena: Arena
+            arena.render()
+            ...
 
             # на этом этапе не понятно нужен ли код ниже в текущей реализации
             # поскольку у нас теперь есть Arena -
             # последовательность из DoublyLinkedList[ContentNode]...
             # по идее нам достаточно здесь просто
-            # написать обработчик для area (area.render()), который бы рендерил текст
-            # в зависимости от area.tag
-            # результат area.render() кладем в self.result и возвращаем его...
+            # написать обработчик для arena (arena.render()), который бы рендерил текст
+            # в зависимости от arena.tag
+            # результат arena.render() кладем в self.result и возвращаем его...
 
             # Код ниже может помочь в форматировании чанков, но это не точно
 
-            print(area)
+            # arena.render()
 
-            # for node in area.nodes:
+            # for node in arena.nodes:
             #     node: ContentNode
             #
-            #     print(area, node)
+            #     print(arena, node)
             #
             #     if node.content_type == 'image':
             #         # TODO
@@ -143,9 +146,11 @@ def load_content() -> list:
     return list(json.loads(data))
 
 
-cnt: DoublyLinkedList = DoublyLinkedList.from_list(data=load_content())
+cnt: DoublyLinkedList[ContentNode] = \
+    DoublyLinkedList.from_list(data=load_content())
+
 processor = ContentProcessor(content=cnt)
 result_content = processor.fetch_content()
 
-writer = FileDescriptor(with_clearing=True)
-writer.write(" ".join(result_content))
+# writer = FileDescriptor(with_clearing=True)
+# writer.write(" ".join(result_content))

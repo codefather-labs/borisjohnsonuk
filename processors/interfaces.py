@@ -47,10 +47,10 @@ class AbstractDoublyLinkedList(Sequence, ABC):
 
 
 class TagRenderFormat(Enum):
-    LEFT_TAG_ONLY = '{self.open_tag}{" ".join(self.buf)}'
-    RIGHT_TAG_ONLY = '{" ".join(self.buf)}{self.close_tag}'
-    BOTH_TAGS = '{self.open_tag}{" ".join(self.buf)}{self.close_tag}'
-    NO_TAGS = '{" ".join(self.buf)}'
+    LEFT_TAG_ONLY = 1
+    RIGHT_TAG_ONLY = 2
+    BOTH_TAGS = 3
+    NO_TAGS = 4
 
 
 class AbstractTag(ABC):
@@ -59,16 +59,14 @@ class AbstractTag(ABC):
     close_tag: Optional[str]
     render_format: TagRenderFormat
 
-    def render(self) -> str:
-        return f"{self.render_format.value}"
-
-    def __str__(self):
-        return self.render()
+    @abstractmethod
+    def render(self, text: str) -> str: ...
 
 
 class AbstractArena(AbstractDoublyLinkedList, AbstractNode):
     nodes: AbstractDoublyLinkedList[AbstractNode]
     tag: AbstractTag
+    body: list
 
     @abstractmethod
     def append(self, node: AbstractNode): ...
@@ -76,3 +74,9 @@ class AbstractArena(AbstractDoublyLinkedList, AbstractNode):
     @staticmethod
     @abstractmethod
     def from_list(content: AbstractDoublyLinkedList): raise NotImplementedError
+
+    @abstractmethod
+    def render(self) -> str: raise NotImplementedError
+
+    @abstractmethod
+    def fetch_body(self) -> None: raise NotImplementedError

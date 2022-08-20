@@ -4,7 +4,7 @@ from io import TextIOWrapper
 from typing import Optional, Union, List
 
 from interfaces import AbstractTag, AbstractArena, AbstractDoublyLinkedList, BaseContentNode, AbstractNode
-from fonts import FONT_MAP
+from fonts import FONT_MAP, FontTag
 
 
 class ContentNode(BaseContentNode):
@@ -41,7 +41,7 @@ class DoublyLinkedList(AbstractDoublyLinkedList):
         self.nodes.append(node)
 
     @staticmethod
-    def from_list(data: list) -> AbstractDoublyLinkedList:
+    def from_list(data: list):
         dll = DoublyLinkedList()
         for obj in data:
             obj_type = obj['type']
@@ -61,9 +61,29 @@ class DoublyLinkedList(AbstractDoublyLinkedList):
 
 
 class Arena(AbstractArena):
-    def __init__(self, tag: AbstractTag, nodes: AbstractDoublyLinkedList[AbstractNode] = None):
+    """
+    Inspired by PyArena lol xD (why not)
+
+    Arena is DataStructure
+    Arena is DoublyLinkedList and DoublyLinkedList-Node at the same time (see internals of AbstractArena)
+    Arena is a DoublyLinkedList which contains next and prev Arenas (encapsulated in AbstractArena)
+    Arena is a DoublyLinkedList which contains DoublyLinkedList[ContentNode] (self.nodes)
+    Arena contains Markdown Tag for DoublyLinkedList[ContentNode] (self.tag)
+
+    """
+
+    def __init__(self, tag: FontTag, nodes: AbstractDoublyLinkedList[AbstractNode] = None):
         self.nodes: AbstractDoublyLinkedList[AbstractNode] = nodes if nodes else DoublyLinkedList()
-        self.tag: AbstractTag = tag
+        self.tag: FontTag = tag
+        self.body = []
+
+    def fetch_body(self):
+        self.body = [node.body['text'] for node in self.nodes]
+
+    def render(self) -> str:
+        self.fetch_body()
+
+        return self.tag.render(text=" ".join(self.body))
 
     def append(self, node: AbstractNode):
         self.nodes.append(node)
@@ -76,10 +96,10 @@ class Arena(AbstractArena):
         node.set_previous_node(self.nodes[-1])
         self.nodes.append(node)
 
-    def set_next_node(self, node: AbstractNode):
+    def set_next_node(self, node: AbstractArena):
         self.__next = node
 
-    def set_previous_node(self, node: AbstractNode):
+    def set_previous_node(self, node: AbstractArena):
         self.__prev = node
 
     @property
@@ -92,31 +112,40 @@ class Arena(AbstractArena):
 
     @staticmethod
     def from_list(content: DoublyLinkedList) -> DoublyLinkedList[AbstractArena]:
-        last_area = None
-        areas = DoublyLinkedList()
+        last_arena = None
+        arenas = DoublyLinkedList()
         while content:
             node: ContentNode = content.pop(0)
-            current_font_tag: AbstractTag = FONT_MAP[node.body.get('flags')]
+            text: str = node.body.get('text')
+            current_font_tag: FontTag = FONT_MAP[node.body.get('flags')]()
 
             if node.content_type == 'image':
                 # TODO image collecting
                 continue
 
-            if not last_area:
-                last_area = Arena(tag=current_font_tag)
+            if not last_arena:
+                last_arena = Arena(tag=current_font_tag)
 
-            elif last_area.tag != current_font_tag:
-                areas.append(last_area)
-                last_area = Arena(tag=current_font_tag)
+            elif type(last_arena.tag) != type(current_font_tag):
+                arenas.append(last_arena)
+                last_arena = Arena(tag=current_font_tag)
 
-            last_area.append(node)
+            last_arena.append(node)
 
         else:
-            areas.append(last_area)
+            arenas.append(last_arena)
 
-        return areas
+        # for arena in arenas:
+        #     arena: Arena
+        #     print(f"{arena} Arena:")
+        #
+        #     body = [node.body['text'] for node in arena.nodes]
+        #
+        #     print(f"------ {arena.tag} {body} ")
 
-    def pop(self, index: int) -> ContentNode:
+        return arenas
+
+    def pop(self, index: int) -> AbstractNode:
         pass
 
     def __len__(self) -> int:

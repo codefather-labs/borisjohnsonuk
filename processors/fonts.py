@@ -1,97 +1,116 @@
 from interfaces import AbstractTag, TagRenderFormat
 
 
-class Blockquote(AbstractTag):
+class FontTag(AbstractTag):
+    def render(self, text: str) -> str:
+        rendered_string = None
+
+        if self.render_format == TagRenderFormat.BOTH_TAGS:
+            rendered_string = f"{self.open_tag}{text}{self.close_tag}"
+
+        elif self.render_format == TagRenderFormat.LEFT_TAG_ONLY:
+            rendered_string = f"{self.open_tag}{text}"
+
+        elif self.render_format == TagRenderFormat.RIGHT_TAG_ONLY:
+            rendered_string = f"{text}{self.close_tag}"
+
+        elif self.render_format == TagRenderFormat.NO_TAGS:
+            rendered_string = text
+
+        return rendered_string
+
+
+class Blockquote(FontTag):
     open_tag = '>'
     close_tag = None
     render_format = TagRenderFormat.LEFT_TAG_ONLY
 
 
-class SubscriptItalicBold(AbstractTag):
+class SubscriptItalicBold(FontTag):
     open_tag = '***~'
     close_tag = '~***'
     render_format = TagRenderFormat.BOTH_TAGS
 
 
-class SubscriptItalic(AbstractTag):
+class SubscriptItalic(FontTag):
     open_tag = '*~'
     close_tag = '~*'
     render_format = TagRenderFormat.BOTH_TAGS
 
 
-class Subscript(AbstractTag):
+class Subscript(FontTag):
     open_tag = '~'
     close_tag = '~'
     render_format = TagRenderFormat.BOTH_TAGS
 
 
-class SuperscriptItalicBold(AbstractTag):
+class SuperscriptItalicBold(FontTag):
     open_tag = '***^'
     close_tag = '^***'
     render_format = TagRenderFormat.BOTH_TAGS
 
 
-class SuperscriptItalic(AbstractTag):
+class SuperscriptItalic(FontTag):
     open_tag = '*^'
     close_tag = '^*'
     render_format = TagRenderFormat.BOTH_TAGS
 
 
-class Superscript(AbstractTag):
+class Superscript(FontTag):
     open_tag = '^'
     close_tag = '^'
     render_format = TagRenderFormat.BOTH_TAGS
 
 
-class ItalicBold(AbstractTag):
+class ItalicBold(FontTag):
     open_tag = '***'
     close_tag = '***'
     render_format = TagRenderFormat.BOTH_TAGS
 
 
-class Italic(AbstractTag):
+class Italic(FontTag):
     open_tag = '*'
     close_tag = '*'
     render_format = TagRenderFormat.BOTH_TAGS
 
 
-class Bold(AbstractTag):
+class Bold(FontTag):
     open_tag = '**'
     close_tag = '**'
     render_format = TagRenderFormat.BOTH_TAGS
 
 
-class Title(AbstractTag):
+class Title(FontTag):
     open_tag = '#'
     close_tag = '\n'
     render_format = TagRenderFormat.BOTH_TAGS
 
 
-class ParagraphTheme(AbstractTag):
+class ParagraphTheme(FontTag):
     open_tag = '##'
     close_tag = '\n'
     render_format = TagRenderFormat.BOTH_TAGS
 
 
-class ParagraphSubtheme(AbstractTag):
+class ParagraphSubtheme(FontTag):
     open_tag = '###'
     close_tag = '\n'
     render_format = TagRenderFormat.BOTH_TAGS
 
 
-class ChapterNumber(AbstractTag):
+class ChapterNumber(FontTag):
     open_tag = '####'
     close_tag = '\n'
     render_format = TagRenderFormat.BOTH_TAGS
 
 
-class Code(AbstractTag):
+class Code(FontTag):
     open_tag = '```'
     close_tag = '```'
     render_format = TagRenderFormat.BOTH_TAGS
 
 
-class Text(AbstractTag):
+class Text(FontTag):
     open_tag = None
     close_tag = None
     render_format = TagRenderFormat.NO_TAGS
