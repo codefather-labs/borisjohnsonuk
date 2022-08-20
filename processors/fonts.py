@@ -6,17 +6,11 @@ class Blockquote(AbstractTag):
     close_tag = None
     render_format = TagRenderFormat.LEFT_TAG_ONLY
 
-    def __init__(self, buf: list):
-        self.buf = buf
-
 
 class SubscriptItalicBold(AbstractTag):
     open_tag = '***~'
     close_tag = '~***'
     render_format = TagRenderFormat.BOTH_TAGS
-
-    def __init__(self, buf: list):
-        self.buf = buf
 
 
 class SubscriptItalic(AbstractTag):
@@ -24,17 +18,11 @@ class SubscriptItalic(AbstractTag):
     close_tag = '~*'
     render_format = TagRenderFormat.BOTH_TAGS
 
-    def __init__(self, buf: list):
-        self.buf = buf
-
 
 class Subscript(AbstractTag):
     open_tag = '~'
     close_tag = '~'
     render_format = TagRenderFormat.BOTH_TAGS
-
-    def __init__(self, buf: list):
-        self.buf = buf
 
 
 class SuperscriptItalicBold(AbstractTag):
@@ -42,17 +30,11 @@ class SuperscriptItalicBold(AbstractTag):
     close_tag = '^***'
     render_format = TagRenderFormat.BOTH_TAGS
 
-    def __init__(self, buf: list):
-        self.buf = buf
-
 
 class SuperscriptItalic(AbstractTag):
     open_tag = '*^'
     close_tag = '^*'
     render_format = TagRenderFormat.BOTH_TAGS
-
-    def __init__(self, buf: list):
-        self.buf = buf
 
 
 class Superscript(AbstractTag):
@@ -60,17 +42,11 @@ class Superscript(AbstractTag):
     close_tag = '^'
     render_format = TagRenderFormat.BOTH_TAGS
 
-    def __init__(self, buf: list):
-        self.buf = buf
-
 
 class ItalicBold(AbstractTag):
     open_tag = '***'
     close_tag = '***'
     render_format = TagRenderFormat.BOTH_TAGS
-
-    def __init__(self, buf: list):
-        self.buf = buf
 
 
 class Italic(AbstractTag):
@@ -78,17 +54,11 @@ class Italic(AbstractTag):
     close_tag = '*'
     render_format = TagRenderFormat.BOTH_TAGS
 
-    def __init__(self, buf: list):
-        self.buf = buf
-
 
 class Bold(AbstractTag):
     open_tag = '**'
     close_tag = '**'
     render_format = TagRenderFormat.BOTH_TAGS
-
-    def __init__(self, buf: list):
-        self.buf = buf
 
 
 class Title(AbstractTag):
@@ -96,17 +66,11 @@ class Title(AbstractTag):
     close_tag = '\n'
     render_format = TagRenderFormat.BOTH_TAGS
 
-    def __init__(self, buf: list):
-        self.buf = buf
-
 
 class ParagraphTheme(AbstractTag):
     open_tag = '##'
     close_tag = '\n'
     render_format = TagRenderFormat.BOTH_TAGS
-
-    def __init__(self, buf: list):
-        self.buf = buf
 
 
 class ParagraphSubtheme(AbstractTag):
@@ -114,17 +78,11 @@ class ParagraphSubtheme(AbstractTag):
     close_tag = '\n'
     render_format = TagRenderFormat.BOTH_TAGS
 
-    def __init__(self, buf: list):
-        self.buf = buf
-
 
 class ChapterNumber(AbstractTag):
     open_tag = '####'
     close_tag = '\n'
     render_format = TagRenderFormat.BOTH_TAGS
-
-    def __init__(self, buf: list):
-        self.buf = buf
 
 
 class Code(AbstractTag):
@@ -132,17 +90,11 @@ class Code(AbstractTag):
     close_tag = '```'
     render_format = TagRenderFormat.BOTH_TAGS
 
-    def __init__(self, buf: list):
-        self.buf = buf
-
 
 class Text(AbstractTag):
     open_tag = None
     close_tag = None
     render_format = TagRenderFormat.NO_TAGS
-
-    def __init__(self, buf: list):
-        self.buf = buf
 
 
 FONT_MAP = {

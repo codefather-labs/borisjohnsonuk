@@ -1,13 +1,10 @@
 import json
-from copy import copy
-from types import NoneType
 from typing import Optional
 
 from interfaces import AbstractTag
 from utils import (
-    FileDescriptor, DoublyLinkedList, ContentNode, Area
+    FileDescriptor, DoublyLinkedList, ContentNode, Arena
 )
-from fonts import FONT_MAP
 
 
 class ContentProcessor:
@@ -51,16 +48,6 @@ class ContentProcessor:
 
     def fetch_content(self):
         """
-            TODO: задействовать AbstractTag.buf как контейнер участка текста
-                Возможно предварительно стоит создать еще один линкед лист из AbstractTag.buf
-                каждый из которых отформатирует чанк текста под свой тег
-                это необходимо для валидного сбора буффера для каждого участка текста
-                Предварительно ввожу такой термин как Area,
-                которая будет содержать в себе чанки с ContentNode, трансформированной по AbstractTag
-
-            TODO цель - делегировать группировку и хранение чанков текста отдельной сущности
-                называемой Area
-
             Я хочу получить такое поведение
             которое будет декларировать автоматическое добавление
             нужного тега к text используя данные о предыдущем шрифте.
@@ -70,17 +57,17 @@ class ContentProcessor:
             относящиеся к текущему тегу.
         """
 
-        # TODO пример группировки по Area ниже
+        # TODO пример группировки по Arena ниже
         #   эта идея не тестировалась. воспринимать как псевдокод
 
-        areas = Area.collect_areas(content=self.content)
+        areas = Arena.from_list(content=self.content)
         # self.content = areas ??? может так ?
 
         for area in areas:
-            area: Area
+            area: Arena
 
             # на этом этапе не понятно нужен ли код ниже в текущей реализации
-            # поскольку у нас теперь есть Area -
+            # поскольку у нас теперь есть Arena -
             # последовательность из DoublyLinkedList[ContentNode]...
             # по идее нам достаточно здесь просто
             # написать обработчик для area (area.render()), который бы рендерил текст
@@ -89,60 +76,62 @@ class ContentProcessor:
 
             # Код ниже может помочь в форматировании чанков, но это не точно
 
-            for node in area.chunk:
-                node: ContentNode
+            print(area)
 
-                print(area, node)
-
-                if node.content_type == 'image':
-                    # TODO
-                    # self.process_image(node=node)
-                    continue
-
-                last_font_tag: Optional[AbstractTag] = \
-                    FONT_MAP[
-                        node.get_previous_node.body.get('flags')
-                    ] if node.get_previous_node else None
-
-                # я последовательно перебираю весь текст и
-                # при несоответствии текущего шрифта с последним,
-
-                current_font_tag: AbstractTag = FONT_MAP[node.body.get('flags')]
-                text: str = node.body.get('text')
-
-                if text.isspace():
-                    space_count = text.count(' ')
-                    if space_count == 1:
-                        self.result.append(' ')
-
-                    elif space_count > 1:
-                        self.result.append(f"\n{' ' * space_count}")
-
-                    continue
-
-                open_tag: Optional[str] = self.get_open_tag(
-                    current=current_font_tag,
-                    last=last_font_tag,
-                )
-
-                close_tag: Optional[str] = self.get_close_tag(
-                    current=current_font_tag,
-                    last=last_font_tag,
-                )
-                result_string = text
-
-                if not isinstance(open_tag, NoneType):
-                    result_string = f"{open_tag}{result_string}"
-
-                if not isinstance(close_tag, NoneType):
-                    result_string = f"{result_string}{close_tag}"
-
-                # добавляю в result текущий текст c
-                # его открытым и закрытым тегом
-                # (их может не быть если текущий текст
-                # не является открывающим или закрывающим свой тег)
-
-                self.result.append(result_string)
+            # for node in area.nodes:
+            #     node: ContentNode
+            #
+            #     print(area, node)
+            #
+            #     if node.content_type == 'image':
+            #         # TODO
+            #         # self.process_image(node=node)
+            #         continue
+            #
+            #     last_font_tag: Optional[AbstractTag] = \
+            #         FONT_MAP[
+            #             node.get_previous_node.body.get('flags')
+            #         ] if node.get_previous_node else None
+            #
+            #     # я последовательно перебираю весь текст и
+            #     # при несоответствии текущего шрифта с последним,
+            #
+            #     current_font_tag: AbstractTag = FONT_MAP[node.body.get('flags')]
+            #     text: str = node.body.get('text')
+            #
+            #     if text.isspace():
+            #         space_count = text.count(' ')
+            #         if space_count == 1:
+            #             self.result.append(' ')
+            #
+            #         elif space_count > 1:
+            #             self.result.append(f"\n{' ' * space_count}")
+            #
+            #         continue
+            #
+            #     open_tag: Optional[str] = self.get_open_tag(
+            #         current=current_font_tag,
+            #         last=last_font_tag,
+            #     )
+            #
+            #     close_tag: Optional[str] = self.get_close_tag(
+            #         current=current_font_tag,
+            #         last=last_font_tag,
+            #     )
+            #     result_string = text
+            #
+            #     if not isinstance(open_tag, NoneType):
+            #         result_string = f"{open_tag}{result_string}"
+            #
+            #     if not isinstance(close_tag, NoneType):
+            #         result_string = f"{result_string}{close_tag}"
+            #
+            #     # добавляю в result текущий текст c
+            #     # его открытым и закрытым тегом
+            #     # (их может не быть если текущий текст
+            #     # не является открывающим или закрывающим свой тег)
+            #
+            #     self.result.append(result_string)
 
         return self.result
 

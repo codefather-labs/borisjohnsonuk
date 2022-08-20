@@ -5,6 +5,18 @@ from typing import List, Optional, Union
 
 
 class AbstractNode(ABC):
+    body: Union[str, dict]
+    __prev: object
+    __next: object
+
+    @abstractmethod
+    def set_next_node(self, node: object): raise NotImplementedError
+
+    @abstractmethod
+    def set_previous_node(self, node: object): raise NotImplementedError
+
+
+class BaseContentNode(AbstractNode):
     content_type: str
     body: Union[str, dict]
     __prev: object
@@ -23,6 +35,15 @@ class AbstractDoublyLinkedList(Sequence, ABC):
     @staticmethod
     @abstractmethod
     def from_list(data: list): raise NotImplementedError
+
+    @abstractmethod
+    def append(self, data: AbstractNode): raise NotImplementedError
+
+    @abstractmethod
+    def pop(self, index: int) -> AbstractNode: raise NotImplementedError
+
+    def __getitem__(self, index: int) -> AbstractNode:
+        return self.nodes[index]
 
 
 class TagRenderFormat(Enum):
@@ -45,13 +66,13 @@ class AbstractTag(ABC):
         return self.render()
 
 
-class AbstractArea(ABC, Sequence):
-    chunk: List[AbstractNode]
+class AbstractArena(AbstractDoublyLinkedList, AbstractNode):
+    nodes: AbstractDoublyLinkedList[AbstractNode]
     tag: AbstractTag
 
     @abstractmethod
-    def append_node(self, node: AbstractNode): ...
+    def append(self, node: AbstractNode): ...
 
     @staticmethod
     @abstractmethod
-    def collect_areas(content: AbstractDoublyLinkedList): ...
+    def from_list(content: AbstractDoublyLinkedList): raise NotImplementedError
