@@ -1,7 +1,12 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import List, Optional, Union
+
+
+class PDFContentType(IntEnum):
+    TEXT = 0
+    IMAGE = 1
 
 
 class AbstractNode(ABC):
@@ -85,4 +90,4 @@ class AbstractArena(AbstractDoublyLinkedList, AbstractNode):
     def render(self) -> str: raise NotImplementedError
 
     @abstractmethod
-    def fetch_body(self) -> None: raise NotImplementedError
+    def prepare_body(self) -> None: raise NotImplementedError

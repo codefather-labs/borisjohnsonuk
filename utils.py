@@ -4,7 +4,7 @@ from io import TextIOWrapper
 from typing import Optional, Union, List
 
 from interfaces import AbstractTag, AbstractArena, AbstractDoublyLinkedList, BaseContentNode, AbstractNode
-from fonts import FONT_MAP, FontTag
+from fonts import FONT_MAP, FontTag, Image, FONT_SIZE_SIGNATURE_MAP, TITLE_SIZE_MIN, TITLE_SIZE_MAX, Code
 
 
 class ContentNode(BaseContentNode):
@@ -64,10 +64,10 @@ class Arena(AbstractArena):
     """
     Inspired by PyArena lol xD (why not)
 
-    Arena is DataStructure
+    Arena is Data Structure
     Arena is DoublyLinkedList and DoublyLinkedList-Node at the same time (see internals of AbstractArena)
-    Arena is a DoublyLinkedList which contains next and prev Arenas (encapsulated in AbstractArena)
-    Arena is a DoublyLinkedList which contains DoublyLinkedList[ContentNode] (self.nodes)
+    Arena is a DoublyLinkedList which contains links on next and prev Arenas (encapsulated in AbstractArena)
+    Arena is a DoublyLinkedList which contains link on DoublyLinkedList[ContentNode] (self.nodes)
     Arena contains Markdown Tag for DoublyLinkedList[ContentNode] (self.tag)
 
     """
@@ -77,27 +77,89 @@ class Arena(AbstractArena):
         self.tag: FontTag = tag
         self.body = []
 
-    @staticmethod
-    def transform_text(text: list):
-        for index, element in enumerate(text):
+    def transform_text(self, text: Union[str, list], size: int = None):
+        # Proceed only with spaces and font sizes.
+        # Special tag processing going inside
+        # FontTag.pre_processing and FontTag.pre_processing
+        if isinstance(text, list):
+            for index, element in enumerate(text):
+                if str(element).isspace():
+                    space_count = element.count(' ')
+                    if space_count == 1:
+                        # FIXME CHANGES
+                        del text[index]
+                        ...
 
-            if str(element).isspace():
-                space_count = element.count(' ')
+                    elif space_count > 1:
+                        text[index] = f"\n{' ' * space_count}"
+
+        else:
+            if str(text).isspace():
+                space_count = text.count(' ')
                 if space_count == 1:
-                    del text[index]
-                    ...
-
+                    text = text.replace(' ', '')
                 elif space_count > 1:
-                    text[index] = f"\n{' ' * space_count}"
+                    text = text.replace(' ' * space_count, f"\n{' ' * space_count}")
+
+        if size:
+
+            if size > TITLE_SIZE_MAX:
+                return f"#{text}"
+            elif size < TITLE_SIZE_MIN:
+                return text
+            return f"{FONT_SIZE_SIGNATURE_MAP[size]}{text}"
 
         return text
 
-    def fetch_body(self) -> list:
-        self.body = [node.body['text'] for node in self.nodes[0:len(self.nodes):2]]
-        return self.transform_text(self.body)
+    def prepare_body(self) -> list:
+        if isinstance(self.tag, Image):
+            self.body = [
+                node.body for node in self.nodes[0:len(self.nodes):2]
+            ]
+            return self.transform_text(self.body)
+        else:
+            self.body = [
+                self.transform_text(text=node.body['text'], size=node.body['size'])
+                for node in self.nodes[0:len(self.nodes):2]
+            ]
+            return self.body
+
+    def prepare_code(self):
+        is_code_ready = all([bool('\n' not in code) for code in self.body])
+        if is_code_ready:
+            print(self.body)
+            # TODO transform this: `j = 0 i = j k = 12.0 j = 2 * k assert i != j`
+            #   to this:
+            #   ```
+            #   j = 0
+            #   i = j
+            #   k = 12.0
+            #   j = 2 * k
+            #   assert i != j
+            #   ```
+            #
+            # last out:
+            #   [
+            #       'j', '', '=', '', '0',
+            #       'i', '', '=', '', 'j',
+            #       'k', '', '=', '', '12.0',
+            #       'j', '', '=', '', '2', '', '*', '', 'k',
+            #       'assert', '', 'i', '', '!=', '', 'j'
+            #   ]
+            # TODO find elements pattern in self.body
+            #   where are two neighbours like - '0', 'i'; 'j', 'k'; '12.0', 'j';
+            #   both are not a space symbols.
+            #   only at this case, can be '\n' between them both!
+            ...
+
+        return self.body
 
     def render(self) -> str:
-        return self.tag.render(text=" ".join(self.fetch_body()))
+        prepared = self.prepare_body()
+        if type(self.tag) == Code:
+            prepared = self.prepare_code()
+
+        return self.tag.render(text=" ".join(prepared))
 
     def append(self, node: AbstractNode):
         self.nodes.append(node)
@@ -131,13 +193,15 @@ class Arena(AbstractArena):
 
         for node in content:
             node: ContentNode
+            current_font_tag: Optional[FontTag] = None
 
-            text: str = node.body.get('text')
-            current_font_tag: FontTag = FONT_MAP[node.body.get('flags')]()
+            if isinstance(node.body, dict):
+                # text case
+                current_font_tag: FontTag = FONT_MAP[node.body.get('flags')]()
 
-            if node.content_type == 'image':
-                # TODO image collecting
-                continue
+            if isinstance(node.body, str):
+                # image case
+                current_font_tag: FontTag = FONT_MAP['image']()
 
             if not last_arena:
                 last_arena = Arena(tag=current_font_tag)
@@ -151,15 +215,6 @@ class Arena(AbstractArena):
         else:
             if last_arena:
                 arenas.append(last_arena)
-
-        # for arena in arenas:
-        #     arena: Arena
-        #     print(f"{arena} Arena:")
-        #     print(f"-------- {arena.render()}")
-
-        # body = [node.body['text'] for node in arena.nodes]
-        #
-        # print(f"------ {arena.tag} {body} ")
 
         return arenas
 

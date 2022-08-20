@@ -1,5 +1,3 @@
-from abc import abstractmethod
-
 from interfaces import AbstractTag, TagRenderFormat
 
 
@@ -27,7 +25,25 @@ class FontTag(AbstractTag):
         return text
 
     def post_processing(self, rendered_string: str):
+        if "#" in rendered_string:
+            rendered_string = rendered_string.replace('*', '')
+            return f"\n\n{rendered_string}\n\n"
         return rendered_string
+
+
+class Image(FontTag):
+    open_tag = None
+    close_tag = None
+    render_format = TagRenderFormat.NO_TAGS
+
+    def pre_processing(self, text: str):
+        if not str(text[0]).isalnum():
+            text = text[1:]
+
+        if not str(text[-1]).isalnum():
+            text = text[:-1]
+
+        return f"\n{text}\n"
 
 
 class Blockquote(FontTag):
@@ -83,6 +99,12 @@ class Italic(FontTag):
     close_tag = '*'
     render_format = TagRenderFormat.BOTH_TAGS
 
+    # FIXME its not everytime is subtitles
+    # def post_processing(self, rendered_string: str):
+    #     if len(rendered_string.split(" ")) > 1:
+    #         rendered_string = f"\n\n{rendered_string}\n\n"
+    #     return rendered_string
+
 
 class Bold(FontTag):
     open_tag = '**'
@@ -126,7 +148,7 @@ class Code(FontTag):
     code_close_tag = '\n```\n'
 
     def pre_processing(self, text: str):
-        if len(text.split(' ')) == 1:
+        if '\n' not in text:
             self.open_tag = self.keyword_open_tag
             self.close_tag = self.keyword_close_tag
         else:
@@ -135,6 +157,7 @@ class Code(FontTag):
         return text
 
     def post_processing(self, rendered_string: str):
+        rendered_string = rendered_string.replace('  ', ' ')
         return rendered_string
 
 
@@ -143,6 +166,32 @@ class Text(FontTag):
     close_tag = None
     render_format = TagRenderFormat.NO_TAGS
 
+
+FONT_SIZE_SIGNATURE_MAP = {
+    31: "#",
+    30: '#',
+    29: "#",
+    28: "#",
+    27: "#",
+    26: "#",
+    25: "###",
+    24: "###",
+    23: "###",
+    22: "###",
+    21: "###",
+    20: "###",
+    19: "###",
+    18: "###",
+    17: "###",
+    16: "####",
+    15: "####",
+    14: "######",
+    13: "######",
+    12: "######",
+}
+
+TITLE_SIZE_MIN = min(FONT_SIZE_SIGNATURE_MAP.keys())
+TITLE_SIZE_MAX = max(FONT_SIZE_SIGNATURE_MAP.keys())
 
 FONT_MAP = {
     "sans, proportional": Text,
@@ -153,5 +202,29 @@ FONT_MAP = {
     "italic, serifed, proportional": Italic,
     "italic, serifed, proportional, bold": ItalicBold,
     "italic, serifed, monospaced": Code,
-    "superscript, italic, serifed, proportional": SuperscriptItalic
+    "superscript, italic, serifed, proportional": SuperscriptItalic,
+    "image": Image,
 }
+
+
+def flags_decomposer(flags):
+    """
+        Make font flags human readable.
+        Useful for PyMuPDF font flags to unwrap them from byte view
+    """
+    l = []
+    if flags & 2 ** 0:
+        l.append("superscript")
+    if flags & 2 ** 1:
+        l.append("italic")
+    if flags & 2 ** 2:
+        l.append("serifed")
+    else:
+        l.append("sans")
+    if flags & 2 ** 3:
+        l.append("monospaced")
+    else:
+        l.append("proportional")
+    if flags & 2 ** 4:
+        l.append("bold")
+    return ", ".join(l)

@@ -7,11 +7,13 @@ import fitz  # import the bindings
 from fitz import Page
 from fitz.utils import get_image_info
 
-from libtypes import PDFContentType
+from utils import FileDescriptor, DoublyLinkedList, ContentNode
+from processor import ContentProcessor
+from fonts import flags_decomposer, FONT_MAP
+from interfaces import PDFContentType
 
-from utils import FileDescriptor
-
-font_sizes = set()
+book_font_sizes = set()
+unknown_font_flags = set()
 
 
 def get_image_from_bytes(image: bytes, filename: str, ext: str):
@@ -26,31 +28,10 @@ def formatted_image(imagepath: str, description: str):
     return f"`\n![{description}]({imagepath})\n`"
 
 
-def save_result(result: List[Tuple[int, str]], filepath: str):
-    for page, content in result:
-        with open(f'{filepath}/{page}.md', 'w', encoding='utf-8') as f:
-            f.write(content)
-            f.close()
-
-
-def flags_decomposer(flags):
-    """Make font flags human readable."""
-    l = []
-    if flags & 2 ** 0:
-        l.append("superscript")
-    if flags & 2 ** 1:
-        l.append("italic")
-    if flags & 2 ** 2:
-        l.append("serifed")
-    else:
-        l.append("sans")
-    if flags & 2 ** 3:
-        l.append("monospaced")
-    else:
-        l.append("proportional")
-    if flags & 2 ** 4:
-        l.append("bold")
-    return ", ".join(l)
+def save_result(r: List[Tuple[int, str]], filepath: str):
+    for p, content in r:
+        writer = FileDescriptor(filepath=f'{filepath}/{p}.md', with_clearing=True)
+        writer.write(content)
 
 
 def get_image_by_block_number(page: Page, block_number: int):
@@ -64,14 +45,15 @@ def get_image_by_block_number(page: Page, block_number: int):
 def handle_block(doc: fitz.Document, page: Page, block) -> List[str]:
     content = []
 
+    page_images: List[dict] = list(get_image_info(page, xrefs=True))
+
     for block in block['blocks']:
         block_number = block['number']
         block_type = block['type']
 
         if block_type == PDFContentType.IMAGE:
             image_name = f"page_{page.number}_{block_number}"
-            image: Optional[dict] = \
-                get_image_by_block_number(page, block_number)
+            image = page_images.pop(0)
 
             if image:
                 src_image: dict = doc.extract_image(image['xref'])
@@ -93,7 +75,9 @@ def handle_block(doc: fitz.Document, page: Page, block) -> List[str]:
                     font_size = int(span['size'])
                     text = span['text']
 
-                    font_sizes.add(font_size)
+                    book_font_sizes.add(font_size)
+                    if font_flags not in FONT_MAP:
+                        unknown_font_flags.add(font_flags)
 
                     content.append({
                         "type": "text",
@@ -109,13 +93,17 @@ def handle_block(doc: fitz.Document, page: Page, block) -> List[str]:
                  f"{block}"
                  f"-----------------------------------------")
 
-    writer = FileDescriptor(filepath='processors/content.json', with_clearing=True)
-    writer.write(json.dumps(content, indent=4))
+    # writer = FileDescriptor(filepath='content.json', with_clearing=True)
+    # writer.write(json.dumps(content, indent=4))
 
-    # tag_processor = ContentProcessor(content=content)
-    # content = tag_processor.fetch_content()
+    cnt: DoublyLinkedList[ContentNode] = \
+        DoublyLinkedList.from_list(data=content)
+    # [print(node.body) for node in cnt]
 
-    # return content
+    processor = ContentProcessor(content=cnt)
+    result_content = processor.fetch_content()
+
+    return result_content
 
 
 def create_md_page(doc: fitz.Document,
@@ -132,14 +120,12 @@ def create_md_page(doc: fitz.Document,
             fitz.TEXT_MEDIABOX_CLIP
     )
 
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!
-    # https://github.com/pymupdf/PyMuPDF/blob/master/fitz/utils.py#L472 !!!!!!!!!!!!!!!!!
-    blocks: dict = json.loads(page.get_displaylist().get_textpage(flags).extractJSON())
+    blocks: dict = json.loads(
+        page.get_displaylist().get_textpage(flags).extractJSON()
+    )
 
     markdown_dict: List[str] = handle_block(doc, page, blocks)
     markdown_string = " ".join(markdown_dict)
-    # if translator:
-    #     markdown_string = translator.translate(markdown_string)
     return markdown_string
 
 
@@ -149,12 +135,12 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    fname = os.path.abspath(args.pdf_path)  # get filename from command line
-    result_path = 'pages'
+    pdf_absolute_path = os.path.abspath(args.pdf_path)  # get filename from command line
+    result_path = os.path.abspath('pages')
     try:
-        doc: fitz.Document = fitz.open(os.path.abspath(fname))  # open document
+        doc: fitz.Document = fitz.open(pdf_absolute_path)  # open document
     except RuntimeError as e:
-        exit()
+        exit(f'pdf_path param is invalid. unknown path {pdf_absolute_path}')
 
     if not os.path.isdir(result_path):
         os.mkdir(result_path)
@@ -170,14 +156,12 @@ if __name__ == '__main__':
         os.mkdir(result_path)
 
     for page in doc:
-        try:
-            result.append((page.number, create_md_page(doc, page)))
-            print(f"Page: {page.number} from {pages} done 👌")
-        except Exception as e:
-            print(e)
+        result.append((page.number, create_md_page(doc, page)))
+        print(f"Page: {page.number} from {pages} done 👌")
 
         del page
 
     save_result(result, filepath=result_path)
-    print(f"{fname.split('/')[1]} converting success 👌")
+    print(f"Unknown Fonts found: {unknown_font_flags}") if unknown_font_flags else None
+    print(f"{pdf_absolute_path.split('/')[-1]} converting success 👌")
     print(f"Result is there -> {result_path}")
