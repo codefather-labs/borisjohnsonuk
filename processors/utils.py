@@ -77,13 +77,27 @@ class Arena(AbstractArena):
         self.tag: FontTag = tag
         self.body = []
 
-    def fetch_body(self):
-        self.body = [node.body['text'] for node in self.nodes]
+    @staticmethod
+    def transform_text(text: list):
+        for index, element in enumerate(text):
+
+            if str(element).isspace():
+                space_count = element.count(' ')
+                if space_count == 1:
+                    del text[index]
+                    ...
+
+                elif space_count > 1:
+                    text[index] = f"\n{' ' * space_count}"
+
+        return text
+
+    def fetch_body(self) -> list:
+        self.body = [node.body['text'] for node in self.nodes[0:len(self.nodes):2]]
+        return self.transform_text(self.body)
 
     def render(self) -> str:
-        self.fetch_body()
-
-        return self.tag.render(text=" ".join(self.body))
+        return self.tag.render(text=" ".join(self.fetch_body()))
 
     def append(self, node: AbstractNode):
         self.nodes.append(node)
@@ -114,8 +128,10 @@ class Arena(AbstractArena):
     def from_list(content: DoublyLinkedList) -> DoublyLinkedList[AbstractArena]:
         last_arena = None
         arenas = DoublyLinkedList()
-        while content:
-            node: ContentNode = content.pop(0)
+
+        for node in content:
+            node: ContentNode
+
             text: str = node.body.get('text')
             current_font_tag: FontTag = FONT_MAP[node.body.get('flags')]()
 
@@ -133,15 +149,17 @@ class Arena(AbstractArena):
             last_arena.append(node)
 
         else:
-            arenas.append(last_arena)
+            if last_arena:
+                arenas.append(last_arena)
 
         # for arena in arenas:
         #     arena: Arena
         #     print(f"{arena} Arena:")
+        #     print(f"-------- {arena.render()}")
+
+        # body = [node.body['text'] for node in arena.nodes]
         #
-        #     body = [node.body['text'] for node in arena.nodes]
-        #
-        #     print(f"------ {arena.tag} {body} ")
+        # print(f"------ {arena.tag} {body} ")
 
         return arenas
 

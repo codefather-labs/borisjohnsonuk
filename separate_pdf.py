@@ -7,7 +7,7 @@ from fitz import Page
 from fitz.utils import get_image_info
 from typing import List, Optional, Tuple
 
-from libtypes import PDFContentType
+from processors.libtypes import PDFContentType
 
 fname = sys.argv[1]  # get filename from command line
 step = int(sys.argv[2])  # get filename from command line

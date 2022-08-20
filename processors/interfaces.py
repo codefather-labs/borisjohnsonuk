@@ -62,6 +62,12 @@ class AbstractTag(ABC):
     @abstractmethod
     def render(self, text: str) -> str: ...
 
+    @abstractmethod
+    def pre_processing(self, text: str) -> str: ...
+
+    @abstractmethod
+    def post_processing(self, rendered_string: str) -> str: ...
+
 
 class AbstractArena(AbstractDoublyLinkedList, AbstractNode):
     nodes: AbstractDoublyLinkedList[AbstractNode]

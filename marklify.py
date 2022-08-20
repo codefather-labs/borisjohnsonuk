@@ -9,7 +9,7 @@ from fitz import Page
 from fitz.utils import get_image_info
 from typing import List, Optional, Tuple
 
-from libtypes import PDFContentType
+from processors.libtypes import PDFContentType
 
 font_sizes = set()
 

@@ -66,8 +66,7 @@ class ContentProcessor:
 
         for arena in arenas:
             arena: Arena
-            arena.render()
-            ...
+            self.result.append(arena.render())
 
             # на этом этапе не понятно нужен ли код ниже в текущей реализации
             # поскольку у нас теперь есть Arena -
@@ -152,5 +151,5 @@ cnt: DoublyLinkedList[ContentNode] = \
 processor = ContentProcessor(content=cnt)
 result_content = processor.fetch_content()
 
-# writer = FileDescriptor(with_clearing=True)
-# writer.write(" ".join(result_content))
+writer = FileDescriptor(with_clearing=True)
+writer.write(" ".join(result_content))

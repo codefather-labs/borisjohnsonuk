@@ -1,9 +1,13 @@
+from abc import abstractmethod
+
 from interfaces import AbstractTag, TagRenderFormat
 
 
 class FontTag(AbstractTag):
     def render(self, text: str) -> str:
         rendered_string = None
+
+        text = self.pre_processing(text)
 
         if self.render_format == TagRenderFormat.BOTH_TAGS:
             rendered_string = f"{self.open_tag}{text}{self.close_tag}"
@@ -17,6 +21,12 @@ class FontTag(AbstractTag):
         elif self.render_format == TagRenderFormat.NO_TAGS:
             rendered_string = text
 
+        return self.post_processing(rendered_string)
+
+    def pre_processing(self, text: str):
+        return text
+
+    def post_processing(self, rendered_string: str):
         return rendered_string
 
 
@@ -108,6 +118,24 @@ class Code(FontTag):
     open_tag = '```'
     close_tag = '```'
     render_format = TagRenderFormat.BOTH_TAGS
+
+    keyword_open_tag = '`'
+    keyword_close_tag = '`'
+
+    code_open_tag = '\n```\n'
+    code_close_tag = '\n```\n'
+
+    def pre_processing(self, text: str):
+        if len(text.split(' ')) == 1:
+            self.open_tag = self.keyword_open_tag
+            self.close_tag = self.keyword_close_tag
+        else:
+            self.open_tag = self.code_open_tag
+            self.close_tag = self.code_close_tag
+        return text
+
+    def post_processing(self, rendered_string: str):
+        return rendered_string
 
 
 class Text(FontTag):
