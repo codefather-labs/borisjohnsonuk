@@ -86,9 +86,7 @@ class Arena(AbstractArena):
                 if str(element).isspace():
                     space_count = element.count(' ')
                     if space_count == 1:
-                        # FIXME CHANGES
                         del text[index]
-                        ...
 
                     elif space_count > 1:
                         text[index] = f"\n{' ' * space_count}"
