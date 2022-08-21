@@ -1,11 +1,15 @@
 build:
 	docker-compose build
 
-example:
-	docker-compose run ubuntu python3 marklify.py books/Using_Asyncio_in_Python_Understanding_Pythons_Asynchronous_Programming.pdf && docker-compose down
+linux_example:
+	python3 . --source_pdf_path books/Using_Asyncio_in_Python_Understanding_Pythons_Asynchronous_Programming.pdf --output_dir_path result
+
+macos_example:
+	docker-compose run ubuntu python3 . --source_pdf_path books/Using_Asyncio_in_Python_Understanding_Pythons_Asynchronous_Programming.pdf --output_dir_path result
+
+windows_example:
+	# Not tested on windows
 
 debug:
 	docker-compose run ubuntu python3 . books/Cython_with_image.pdf && docker-compose down
 
-test_translate:
-	python3 translator.py test

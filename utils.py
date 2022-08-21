@@ -76,6 +76,7 @@ class Arena(AbstractArena):
         self.nodes: AbstractDoublyLinkedList[AbstractNode] = nodes if nodes else DoublyLinkedList()
         self.tag: FontTag = tag
         self.body = []
+        self.unknown_fonts = []
 
     def transform_text(self, text: Union[str, list], size: int = None):
         # Proceed only with spaces and font sizes.
@@ -192,6 +193,10 @@ class Arena(AbstractArena):
     def get_previous_node(self):
         return self.__prev
 
+    def add_unknown_font(self, font: str):
+        if font not in self.unknown_fonts:
+            self.unknown_fonts.append(font)
+
     @staticmethod
     def from_list(content: DoublyLinkedList) -> DoublyLinkedList[AbstractArena]:
         last_arena = None
@@ -203,7 +208,12 @@ class Arena(AbstractArena):
 
             if isinstance(node.body, dict):
                 # text case
-                current_font_tag: FontTag = FONT_MAP[node.body.get('flags')]()
+                if not node.body.get('flags') in FONT_MAP:
+                    last_arena.add_unknown_font(node.body.get('flags'))
+
+                    current_font_tag: FontTag = FONT_MAP['sans, proportional']()
+                else:
+                    current_font_tag: FontTag = FONT_MAP[node.body.get('flags')]()
 
             if isinstance(node.body, str):
                 # image case

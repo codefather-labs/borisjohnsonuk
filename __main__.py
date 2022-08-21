@@ -12,12 +12,14 @@ from processor import ContentProcessor
 from fonts import flags_decomposer, FONT_MAP
 from interfaces import PDFContentType
 
+result_path = None
 book_font_sizes = set()
-unknown_font_flags = set()
+unknown_fonts_map_filepath = lambda: os.path.join(result_path, 'unknown_fonts_map.json')
 
 
 def get_image_from_bytes(image: bytes, filename: str, ext: str):
-    filepath = f"pages/images/{filename}.{ext}"
+    # filepath = f"pages/images/{filename}.{ext}"
+    filepath = os.path.join(result_path, f"images/{filename}.{ext}")
     img = open(filepath, "wb")
     img.write(image)
     img.close()
@@ -76,8 +78,6 @@ def handle_block(doc: fitz.Document, page: Page, block) -> List[str]:
                     text = span['text']
 
                     book_font_sizes.add(font_size)
-                    if font_flags not in FONT_MAP:
-                        unknown_font_flags.add(font_flags)
 
                     content.append({
                         "type": "text",
@@ -101,7 +101,26 @@ def handle_block(doc: fitz.Document, page: Page, block) -> List[str]:
     # [print(node.body) for node in cnt]
 
     processor = ContentProcessor(content=cnt)
+    processor.load_unknown_fonts(filepath=unknown_fonts_map_filepath())
+
     result_content = processor.fetch_content()
+
+    if processor.unknown_fonts:
+        print('\n-------------')
+        print(f"\nFound unknown fonts: {processor.unknown_fonts}")
+        print(f"There are will be saved inside of "
+              f"{unknown_fonts_map_filepath()} path.\n")
+        print(f"You need set all unknown fonts inside 'of {unknown_fonts_map_filepath()}'\n"
+              f"and try to restart program. \n"
+              f"They area will be loaded.\n")
+        print('-------------\n')
+
+        descriptor = FileDescriptor(
+            filepath=unknown_fonts_map_filepath(),
+            with_clearing=True
+        )
+        fonts = [{font: None} for font in processor.unknown_fonts]
+        descriptor.write(json.dumps(fonts))
 
     return result_content
 
@@ -165,6 +184,5 @@ if __name__ == '__main__':
         del page
 
     save_result(result, filepath=result_path)
-    print(f"Unknown Fonts found: {unknown_font_flags}") if unknown_font_flags else None
     print(f"{pdf_absolute_path.split('/')[-1]} converting success 👌")
     print(f"Result is there -> {result_path}")

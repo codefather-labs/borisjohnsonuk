@@ -193,6 +193,15 @@ FONT_SIZE_SIGNATURE_MAP = {
 TITLE_SIZE_MIN = min(FONT_SIZE_SIGNATURE_MAP.keys())
 TITLE_SIZE_MAX = max(FONT_SIZE_SIGNATURE_MAP.keys())
 
+AVAIlABLE_FONTS_FOR_MAPPING = [
+    Text, Italic, Bold,
+    ItalicBold, Code, Image,
+    Blockquote, ChapterNumber,
+    Subscript, SubscriptItalic, SubscriptItalicBold,
+    Superscript, SuperscriptItalic, SuperscriptItalicBold,
+    Title, ParagraphTheme, ParagraphSubtheme
+]
+
 FONT_MAP = {
     "sans, proportional": Text,
     "serifed, proportional": Text,
@@ -202,7 +211,6 @@ FONT_MAP = {
     "italic, serifed, proportional": Italic,
     "italic, serifed, proportional, bold": ItalicBold,
     "italic, serifed, monospaced": Code,
-    "italic, serifed, monospaced, bold": Code,
     "superscript, italic, serifed, proportional": SuperscriptItalic,
     "image": Image,
 }
