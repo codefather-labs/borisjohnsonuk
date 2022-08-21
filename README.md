@@ -4,15 +4,17 @@
 
 ### Quick start
 ```
-make build
-make example
+$ make build
+$ make linux_example
+$ make macos_example
+$ make windows_example # not tested yet
 ```
 ### Features
-- Boris can convert your PDF file to Markdown and he supports images! But Text extracts not carefule yet, sorry.
-- Python3 support
+- Boris can convert your PDF file to Markdown.
+- It supports images, codeblock, blockquotes, titles, and all other kinds of font flags! (Unknown font flags ease to adding manually)
+- Text extracts carefully now!
 - Great works inside of Docker image. Outside fitz lib on my M1 Mac was not works. Don't f*ckn know why :(
 
 ### Ideas
-- parsing code blocks via markdown any lib
-- create another way parse backend which transform pdf to html natively 
-- and then html to md via client script
+- I use Boris Johnson converter for convert pdf books and translate them with [deepl](http://deepl.com).
+  By the way, [check it](https://github.com/codefather-labs/deepl-translator-pyppeteer)
