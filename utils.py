@@ -126,8 +126,41 @@ class Arena(AbstractArena):
 
     def prepare_code(self):
         is_code_ready = all([bool('\n' not in code) for code in self.body])
-        if is_code_ready:
-            print(self.body)
+        if is_code_ready and len(self.body) > 1:
+            new_body = []
+
+            max_index = len(self.body) - 1 if len(self.body) > 1 else 1
+
+            current_index = 0
+            left_neighbour_index = lambda: current_index - 1 if current_index > 1 else 0
+            right_neighbour_index = lambda: current_index + 1 if current_index + 1 <= max_index else max_index
+
+            while current_index < max_index:
+                left_neighbour: str = self.body[left_neighbour_index()]
+                current_element: str = self.body[current_index]
+                right_neighbour: str = self.body[right_neighbour_index()]
+
+                new_body.append(current_element)
+
+                if left_neighbour != current_element:
+                    rules = [
+                        current_element != '',
+                        right_neighbour != '',
+                        right_neighbour.isalnum() or right_neighbour in ['{', ';'],
+                    ]
+                    if all(rules):
+                        new_body.append('\n')
+
+                current_index += 1
+            else:
+                ...
+
+            new_body_string = ' '.join(new_body)
+            new_body_string = new_body_string.replace('  ', ' ')
+            new_body_string = new_body_string.replace(' \n ', '\n')
+            print(new_body_string)
+            self.body = new_body_string.split(' ')
+
             # TODO transform this: `j = 0 i = j k = 12.0 j = 2 * k assert i != j`
             #   to this:
             #   ```
@@ -152,6 +185,7 @@ class Arena(AbstractArena):
             #   only at this case, can be '\n' between them both!
             ...
 
+        # print(self.body)
         return self.body
 
     def render(self) -> str:
