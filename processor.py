@@ -48,17 +48,14 @@ class ContentProcessor:
 
     def fetch_content(self):
         """
-            Я хочу получить такое поведение
-            которое будет декларировать автоматическое добавление
-            нужного тега к text используя данные о предыдущем шрифте.
+            I want to get a behavior
+            that will declare the automatic addition
+            the desired tag to text using the data about the previous font.
 
-            Нужен механизм, который позволит не добавлять к каждому слову свой тег
-            по отдельности, а вместо этого будет распознавать чанки текста
-            относящиеся к текущему тегу.
+            What I need is a mechanism that won't add a different tag to each word
+            tag individually, but instead recognize text chunks
+            related to the current tag.
         """
-
-        # TODO пример группировки по Arena ниже
-        #   эта идея не тестировалась. воспринимать как псевдокод
 
         arenas = Arena.from_list(content=self.content)
 
