@@ -153,39 +153,13 @@ class Arena(AbstractArena):
 
                 current_index += 1
             else:
-                ...
+                new_body.append(self.body[-1])
 
             new_body_string = ' '.join(new_body)
             new_body_string = new_body_string.replace('  ', ' ')
             new_body_string = new_body_string.replace(' \n ', '\n')
-            print(new_body_string)
             self.body = new_body_string.split(' ')
 
-            # TODO transform this: `j = 0 i = j k = 12.0 j = 2 * k assert i != j`
-            #   to this:
-            #   ```
-            #   j = 0
-            #   i = j
-            #   k = 12.0
-            #   j = 2 * k
-            #   assert i != j
-            #   ```
-            #
-            # last out:
-            #   [
-            #       'j', '', '=', '', '0',
-            #       'i', '', '=', '', 'j',
-            #       'k', '', '=', '', '12.0',
-            #       'j', '', '=', '', '2', '', '*', '', 'k',
-            #       'assert', '', 'i', '', '!=', '', 'j'
-            #   ]
-            # TODO find elements pattern in self.body
-            #   where are two neighbours like - '0', 'i'; 'j', 'k'; '12.0', 'j';
-            #   both are not a space symbols.
-            #   only at this case, can be '\n' between them both!
-            ...
-
-        # print(self.body)
         return self.body
 
     def render(self) -> str:
