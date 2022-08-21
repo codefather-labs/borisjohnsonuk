@@ -102,10 +102,10 @@ class Arena(AbstractArena):
         if size:
 
             if size > TITLE_SIZE_MAX:
-                return f"#{text}"
+                return f"#{text}\n"
             elif size < TITLE_SIZE_MIN:
                 return text
-            return f"{FONT_SIZE_SIGNATURE_MAP[size]}{text}"
+            return f"{FONT_SIZE_SIGNATURE_MAP[size]}{text}\n"
 
         return text
 

@@ -131,12 +131,15 @@ def create_md_page(doc: fitz.Document,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("pdf_path")
+    parser.add_argument("--source_pdf_path", required=True)
+    parser.add_argument("--output_dir_path", required=True)
 
     args = parser.parse_args()
 
-    pdf_absolute_path = os.path.abspath(args.pdf_path)  # get filename from command line
-    result_path = os.path.abspath('pages')
+    pdf_absolute_path = os.path.abspath(args.source_pdf_path)  # get filename from command line
+    output_dir_path = os.path.abspath(args.output_dir_path)
+
+    result_path = output_dir_path
     try:
         doc: fitz.Document = fitz.open(pdf_absolute_path)  # open document
     except RuntimeError as e:

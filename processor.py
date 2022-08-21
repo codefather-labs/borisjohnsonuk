@@ -4,7 +4,7 @@ from utils import (
 
 
 class ContentProcessor:
-
+    
     def __init__(self, content: DoublyLinkedList[ContentNode]):
         self.content: DoublyLinkedList[ContentNode] = content
         self.result = []

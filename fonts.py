@@ -202,6 +202,7 @@ FONT_MAP = {
     "italic, serifed, proportional": Italic,
     "italic, serifed, proportional, bold": ItalicBold,
     "italic, serifed, monospaced": Code,
+    "italic, serifed, monospaced, bold": Code,
     "superscript, italic, serifed, proportional": SuperscriptItalic,
     "image": Image,
 }
