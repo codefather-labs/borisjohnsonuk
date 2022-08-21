@@ -8,7 +8,7 @@ import __doc__
 
 
 def get_version():
-    return '.'.join(map(str, __doc__.__version__))
+    return __doc__.__version__
 
 
 try:
@@ -20,7 +20,7 @@ except ImportError:
 install_requires = [x for x in str(open('requirements.txt', 'r').read()).split("\n")]
 
 setup(
-    name='pdf-to-markdown-converter (Boris Johnson UK)',
+    name='borisjohnsonuk',
     version=version,
     url='https://github.com/codefather-labs/borisjohnsonuk',
     author=__doc__.__author__,
