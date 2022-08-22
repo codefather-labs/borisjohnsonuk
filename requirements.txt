@@ -4,6 +4,3 @@ Pillow==9.0.1
 Pygments==2.3.1
 PyMuPDF==1.19.5
 PyPDF2==1.26.0
-
-#translator
-git+https://github.com/codefather-labs/deepl-translator-pyppeteer.git
