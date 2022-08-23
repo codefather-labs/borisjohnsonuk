@@ -2,6 +2,7 @@ import os
 import json
 import shutil
 from abc import ABC, abstractmethod
+from json import JSONDecodeError
 from typing import List, Optional, Tuple
 
 import fitz  # import the bindings
@@ -12,6 +13,7 @@ from utils import FileDescriptor, DoublyLinkedList, ContentNode
 from processor import ContentProcessor
 from fonts import flags_decomposer
 from interfaces import PDFContentType
+import fonts
 
 
 class AbstractBoris(ABC):
@@ -27,9 +29,6 @@ class AbstractBoris(ABC):
 
     @abstractmethod
     def initial_boris(self): ...
-
-    @abstractmethod
-    def move_translated_page(self, page_number: int): ...
 
     @abstractmethod
     def fetch_pages(self): ...
@@ -66,17 +65,10 @@ class MarkdownBoris(AbstractBoris):
         self.unknown_fonts_map_filepath = lambda: os.path.join(
             self.output_dir_path, 'unknown_fonts_map.json'
         )
-        self.unknown_fonts_file_descriptor = FileDescriptor(
-            filepath=self.unknown_fonts_map_filepath(),
-            with_clearing=True
-        )
+        self.unknown_fonts_file_descriptor: Optional[FileDescriptor] = None
         self.doc: Optional[fitz.Document] = None
         self.images_path = os.path.join(self.output_dir_path, 'images')
-        self.translated_pages_path = os.path.join(self.output_dir_path, 'translated')
         self.initial_boris()
-
-        # FIXME useless now
-        self.result_pages = []
 
     def initial_boris(self):
         try:
@@ -90,32 +82,17 @@ class MarkdownBoris(AbstractBoris):
         if not os.path.isdir(self.images_path):
             os.mkdir(self.images_path)
 
-        if not os.path.isdir(self.translated_pages_path):
-            os.mkdir(self.translated_pages_path)
-
-    def move_translated_page(self, page_number: int):
-        try:
-            shutil.move(
-                src=os.path.join(
-                    self.output_dir_path, f"{page_number}.md"
-                ),
-                dst=os.path.join(
-                    self.translated_pages_path, f"{page_number}.md"
-                )
-            )
-        except FileNotFoundError:
-            ...
+        self.unknown_fonts_file_descriptor = FileDescriptor(
+            filepath=self.unknown_fonts_map_filepath(),
+        )
+        self.load_unknown_fonts()
 
     def fetch_pages(self):
 
         for page in self.doc:
             page_result = self.create_page(page)
-            self.move_translated_page(page.number)
 
             self.save_page(page.number, page_result)
-
-            # FIXME Useless now
-            # self.result_pages.append((page.number, page_result))
 
             print(f"Page: {page.number} from {self.doc.page_count} done 👌")
 
@@ -140,13 +117,12 @@ class MarkdownBoris(AbstractBoris):
     def save_page(self, page_number: int, page: str):
         writer = FileDescriptor(
             filepath=f'{self.output_dir_path}/{page_number}.md',
-            with_clearing=True
         )
         writer.write(page)
 
     def save_result(self, r: List[Tuple[int, str]], filepath: str):
         for p, content in r:
-            writer = FileDescriptor(filepath=f'{filepath}/{p}.md', with_clearing=True)
+            writer = FileDescriptor(filepath=f'{filepath}/{p}.md')
             writer.write(content)
 
     def get_image_by_block_number(self, page: Page, block_number: int):
@@ -155,6 +131,36 @@ class MarkdownBoris(AbstractBoris):
             if image.get('number') == block_number:
                 return image
         return None
+
+    def load_unknown_fonts(self):
+        if not os.path.exists(self.unknown_fonts_map_filepath()):
+            return
+
+        try:
+            file = open(self.unknown_fonts_map_filepath(), 'r')
+            data = list(json.loads(file.read()))
+            file.close()
+        except JSONDecodeError:
+            exit(f'invalid {self.unknown_fonts_map_filepath()} file')
+
+        for obj in data:
+            obj: dict
+            for k, v in obj.items():
+                if not v:
+                    print(f"Value: {v} on unknown font {k} is invalid. "
+                          f"Skipping...")
+                    continue
+
+                try:
+                    v = getattr(fonts, v)
+                except AttributeError as e:
+                    exit(f"Invalid font value {v} for {k}")
+
+                if v not in fonts.AVAIlABLE_FONTS_FOR_MAPPING:
+                    exit(f"Unknown font value {v} for {k}")
+
+                if v not in fonts.FONT_MAP:
+                    fonts.FONT_MAP.update({k: v})
 
     def handle_block(self, doc: fitz.Document, page: Page, block) -> List[str]:
         content = []
@@ -212,7 +218,6 @@ class MarkdownBoris(AbstractBoris):
             DoublyLinkedList.from_list(data=content)
 
         processor = ContentProcessor(content=cnt)
-        processor.load_unknown_fonts(filepath=self.unknown_fonts_map_filepath())
 
         result_content = processor.fetch_content()
 
@@ -226,8 +231,8 @@ class MarkdownBoris(AbstractBoris):
                   f"They area will be loaded.\n")
             print('-------------\n')
 
-            fonts = [{font: None} for font in processor.unknown_fonts]
-            self.unknown_fonts_file_descriptor.write(json.dumps(fonts))
+            unknown_fonts = [{font: None} for font in processor.unknown_fonts]
+            self.unknown_fonts_file_descriptor.write(json.dumps(unknown_fonts))
 
         return result_content
 

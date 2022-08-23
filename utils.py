@@ -244,13 +244,11 @@ class Arena(AbstractArena):
 class FileDescriptor:
     def __init__(self,
                  filepath: str = None,
-                 with_clearing: bool = False,
-                 create_empty: bool = False):
+                 create_empty: bool = False,
+                 write_key: str = 'w'):
         self.file = filepath if filepath else 'result.md'
         self.is_empty_file_created = False
-
-        if with_clearing:
-            os.system(f'rm -rf {self.file}')
+        self.writer_key = write_key
 
         if create_empty:
             if not os.path.exists(self.file):
@@ -265,7 +263,7 @@ class FileDescriptor:
             os.system(f'touch {self.file}')
             self.is_empty_file_created = True
 
-        self.writer = open(self.file, 'a')
+        self.writer = open(self.file, self.writer_key)
         self.writer.write(data)
         self.writer.close()
 
