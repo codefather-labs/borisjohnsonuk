@@ -1,5 +1,7 @@
-import os
 import argparse
+import os
+import shutil
+
 import asyncio
 from urllib.parse import quote
 from urllib.request import urlopen
@@ -234,13 +236,13 @@ class CustomDeepLCLI(DeepLCLI):
             except TimeoutError:
                 raise DeepLCLIPageLoadError(f"Time limit exceeded. ({self.timeout}ms)")
 
-    def translate(self, script: str) -> str:
+    async def translate(self, script: str) -> str:
         # if not self.internet_on():
         #     raise DeepLCLIPageLoadError("Your network seem to be offline.")
         # self._chk_script(script)
         # script = quote(script.replace("/", r"\/"), safe="")
 
-        return self.loop.run_until_complete(self._translate(script))
+        return await self._translate(script)
 
     async def _translate(self, script: str) -> str:
         if not self.is_started:
@@ -248,7 +250,7 @@ class CustomDeepLCLI(DeepLCLI):
                 await self.start_browser()
                 await asyncio.sleep(self.sleep_secs)
 
-        hash = f"#{self.fr_lang}/{self.to_lang}"
+        hash = f"#{self.fr_lang}/{self.to_lang}/{script}"
         await self.page.goto(f"https://www.deepl.com/translator" + hash)
 
         try:
@@ -332,35 +334,46 @@ if __name__ == '__main__':
     pdf_absolute_path = os.path.abspath(args.source_pdf_path)  # get filename from command line
     output_dir_path = os.path.abspath(args.output_dir_path)
 
-    import fonts
-    from boris import MarkdownBoris
-
-    translatable_fonts = fonts.AVAIlABLE_FONTS_FOR_MAPPING
-    translatable_fonts.remove(fonts.Code)
-    translatable_fonts.remove(fonts.Image)
-
     translator = CustomDeepLCLI(
-        fr_lang='en', to_lang='ru', headless=False,
-        executable_path="/app/Google Chrome.app/Contents/MacOS/Google Chrome",
+        fr_lang='en',
+        to_lang='ru',
+        headless=False,
+        executable_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         timeout=150000,
         sleep_secs=2
     )
 
+    # import here only for demonstration
+    import fonts
+    from boris import MarkdownBoris
+
+    # There are AVAIlABLE_FONTS_FOR_MAPPING fonts which we will use
+    # for choosing available for translate fonts. For example:
+    # images and code is not available for translating
+    translatable_fonts = fonts.AVAIlABLE_FONTS_FOR_MAPPING
+    translatable_fonts.remove(fonts.Image)
+    translatable_fonts.remove(fonts.Code)
+
 
     def pre_processing(self, text: str):
-        return self.translator.translate(text)
+        # we don't care about non-secure global var
+        # cuz it making small i/o bound job
+        global translator
+        return translator.translate(text)
 
 
-    for translatable_font in translatable_fonts:
-        translatable_font.translator = translator
-        translatable_font.pre_processing = pre_processing
+    for font in translatable_fonts:
+        # then for each caught font, we patch them pre_processing method
+        # which will call a translation text method
+        font.pre_processing = pre_processing
 
-        delattr(fonts, translatable_font.__name__)
-        setattr(fonts, translatable_font.__name__, translatable_font)
+        # then we need to remove old fonts for font module and set patched fonts
+        delattr(fonts, font.__name__)
+        setattr(fonts, font.__name__, font)
 
+    # initialize Boris and make him doing his job
     boris = MarkdownBoris(
         source_path=pdf_absolute_path,
         output_dir_path=output_dir_path
     )
-
     boris.fetch_pages()

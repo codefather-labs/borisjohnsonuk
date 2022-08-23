@@ -98,8 +98,6 @@ class MarkdownBoris(AbstractBoris):
 
             del page
 
-        # FIXME Useless now
-        # save_result(result, filepath=result_path)
         print(f"{self.output_dir_path.split('/')[-1]} converting success 👌")
         print(f"Result is there -> {self.output_dir_path}")
 
