@@ -1,6 +1,5 @@
 import argparse
 import os
-import shutil
 
 import asyncio
 from urllib.parse import quote
@@ -197,6 +196,7 @@ class CustomDeepLCLI(DeepLCLI):
         self.sleep_secs = sleep_secs
         self.loop = asyncio.get_event_loop()
         self.page: Optional[Page] = None
+        os.system('killall chrome')
 
     async def close_browser(self):
         await self.browser.close()
@@ -204,21 +204,29 @@ class CustomDeepLCLI(DeepLCLI):
         self.browser = None
 
     async def start_browser(self):
-        os.system('killall Google\ Chrome')
         if not self.is_started:
             """Throw a request."""
-            options = {
-                "headless": self.headless,
-                "no-sandbox": True,
-                "single-process": True,
-                "disable-dev-shm-usage": True,
-                "disable-gpu": True,
-                "no-zygote": True,
-            }
-            if self.executable_path:
-                options.setdefault("executablePath", self.executable_path)
+            args = [
+                "--disable-blink-features=AutomationControlled",
+                "--enable-javascript",
+                "--enable-extensions",
+                # "--single-process",
+                # "--kiosk",
+                # "--no-sandbox",
+                # "--single-process",
+                # "--disable-dev-shm-usage",
+                # "--disable-gpu",
+                # "--no-zygote",
+            ]
 
-            self.browser: Browser = await launch(options)
+            self.browser: Browser = await launch(
+                headless=False,
+                executablePath=self.executable_path,
+                ignoreDefaultArgs=['--enable-automation'],
+                useAutomationExtensions=False,
+                args=args,
+            )
+
             self.is_started = True
 
             self.page: Page = await self.browser.newPage()
@@ -243,6 +251,9 @@ class CustomDeepLCLI(DeepLCLI):
         # script = quote(script.replace("/", r"\/"), safe="")
 
         return await self._translate(script)
+
+    def translate_sync(self, script: str) -> str:
+        return self.loop.run_until_complete(self.translate(script))
 
     async def _translate(self, script: str) -> str:
         if not self.is_started:
@@ -292,6 +303,7 @@ class CustomDeepLCLI(DeepLCLI):
         await asyncio.sleep(self.sleep_secs)
         output_area = await self.page.J('textarea[dl-test="translator-target-input"]')
         res = await self.page.evaluate("elm => elm.value", output_area)
+
         self.translated_fr_lang = str(
             await self.page.evaluate(
                 """() => {
@@ -338,7 +350,7 @@ if __name__ == '__main__':
         fr_lang='en',
         to_lang='ru',
         headless=False,
-        executable_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        executable_path="/usr/bin/google-chrome-stable",
         timeout=150000,
         sleep_secs=2
     )
@@ -359,7 +371,11 @@ if __name__ == '__main__':
         # we don't care about non-secure global var
         # cuz it making small i/o bound job
         global translator
-        return translator.translate(text)
+        translated_text = translator.translate_sync(text)
+        print(f"---- {text}")
+        print(f"---- {translated_text}")
+        print("------------\n")
+        return translated_text
 
 
     for font in translatable_fonts:

@@ -1,6 +1,5 @@
 import os
 import json
-import shutil
 from abc import ABC, abstractmethod
 from json import JSONDecodeError
 from typing import List, Optional, Tuple
@@ -243,5 +242,6 @@ class MarkdownBoris(AbstractBoris):
         )
 
         markdown_dict: List[str] = self.handle_block(self.doc, page, blocks)
+        print(markdown_dict)
         markdown_string = " ".join(markdown_dict)
         return markdown_string
