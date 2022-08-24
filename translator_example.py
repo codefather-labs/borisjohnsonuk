@@ -7,6 +7,7 @@ from urllib.parse import quote
 from urllib.request import urlopen
 from typing import Optional, List
 
+import shutil
 from pyppeteer.browser import Browser  # type: ignore[import]
 from pyppeteer.errors import TimeoutError  # type: ignore[import]
 from pyppeteer.launcher import launch  # type: ignore[import]
@@ -362,6 +363,7 @@ if __name__ == '__main__':
         sleep_secs=2
     )
 
+    from boris import Boris, MuPDFBackend
     from processor import ContentProcessor
 
 
@@ -392,17 +394,61 @@ if __name__ == '__main__':
                     ...
                 else:
                     el = TranslatableContentProcessor.translate(el)
+                    ...
 
                 result.append(el)
 
             return result
 
 
+    class TranslatableMuPDFBackend(MuPDFBackend):
+        translated_path_dir = 'translated'
+
+        def move_translated_page(self, page_number: int):
+            file_name = f"{page_number}.md"
+            shutil.move(
+                src=os.path.join(
+                    self.output_dir_path,
+                    file_name
+                ),
+                dst=os.path.join(
+                    self.output_dir_path,
+                    self.translated_path_dir,
+                    file_name
+                )
+            )
+
+        def fetch_pages(self):
+            for page in self.doc.pages(start=self.from_page):
+                page_result = self.create_page(page)
+
+                self.save_page(page.number, page_result)
+
+                # move mechanism for not translated already translated pages
+                self.move_translated_page(page.number)
+
+                print(f"Page: {page.number} from {self.doc.page_count} done 👌")
+
+                del page
+
+            print(f"{self.output_dir_path.split('/')[-1]} converting success 👌")
+            print(f"Result is there -> {self.output_dir_path}")
+
+
+    class TranslatableBoris(Boris, TranslatableMuPDFBackend):
+        def initial_boris(self):
+            super(TranslatableBoris, self).initial_boris()
+            translated_folder_path = os.path.join(
+                self.output_dir_path,
+                self.translated_path_dir
+            )
+            if not os.path.exists(translated_folder_path):
+                os.mkdir(translated_folder_path)
+
+
     # initialize Boris and make him doing his job
 
-    from boris import Boris
-
-    boris = Boris(
+    boris = TranslatableBoris(
         source_path=pdf_absolute_path,
         output_dir_path=output_dir_path,
         from_page=from_page,
