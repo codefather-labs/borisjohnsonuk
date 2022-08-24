@@ -1,6 +1,7 @@
 import json
 import os
 from json import JSONDecodeError
+from typing import Generator
 
 from utils import (
     DoublyLinkedList, ContentNode, Arena
@@ -32,6 +33,12 @@ class ContentProcessor:
             arena: Arena
             if arena.unknown_fonts:
                 self.unknown_fonts.append(*arena.unknown_fonts)
-            self.result.append(arena.render())
+
+            render_generator: Generator = arena.render()
+            is_code, prepared = next(render_generator)
+
+            prepared = render_generator.send(prepared)
+
+            self.result.append(prepared)
 
         return self.result

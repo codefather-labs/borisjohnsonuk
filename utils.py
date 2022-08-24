@@ -1,7 +1,7 @@
 import os
 from collections.abc import Sequence
 from io import TextIOWrapper
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Generator
 
 from interfaces import AbstractTag, AbstractArena, AbstractDoublyLinkedList, BaseContentNode, AbstractNode
 from fonts import FONT_MAP, FontTag, Image, FONT_SIZE_SIGNATURE_MAP, TITLE_SIZE_MIN, TITLE_SIZE_MAX, Code
@@ -161,12 +161,15 @@ class Arena(AbstractArena):
 
         return self.body
 
-    def render(self) -> str:
+    def render(self) -> Generator:
+        is_code = False
         prepared = self.prepare_body()
         if type(self.tag) == Code:
             prepared = self.prepare_code()
+            is_code = True
 
-        return self.tag.render(text=" ".join(prepared))
+        prepared = yield is_code, prepared
+        yield self.tag.render(text=" ".join(prepared))
 
     def append(self, node: AbstractNode):
         self.nodes.append(node)
