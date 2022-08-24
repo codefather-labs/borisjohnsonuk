@@ -358,7 +358,7 @@ if __name__ == '__main__':
         fr_lang='en',
         to_lang='ru',
         headless=False,
-        executable_path="/usr/bin/google-chrome-stable",
+        executable_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         timeout=150000,
         sleep_secs=2
     )
@@ -389,11 +389,16 @@ if __name__ == '__main__':
                 # we want ot translate only common text.
                 # Not code blocks or images lol.
                 # Translator ignore Keywords with tag '`' - this way we need
+                translated = False
 
-                if '```' in el or '![' in el:
-                    ...
-                else:
-                    el = TranslatableContentProcessor.translate(el)
+                if '```' not in el and '![' not in el:
+
+                    while not translated:
+                        try:
+                            el = TranslatableContentProcessor.translate(el)
+                            translated = True
+                        except TimeoutError:
+                            ...
                     ...
 
                 result.append(el)
