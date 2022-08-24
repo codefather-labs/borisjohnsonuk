@@ -2,7 +2,7 @@ import os
 import argparse
 from types import NoneType
 
-from boris import MarkdownBoris
+from boris import Boris
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -20,7 +20,7 @@ if __name__ == '__main__':
     pdf_absolute_path = os.path.abspath(args.source_pdf_path)  # get filename from command line
     output_dir_path = os.path.abspath(args.output_dir_path)
 
-    boris = MarkdownBoris(
+    boris = Boris(
         source_path=pdf_absolute_path,
         output_dir_path=output_dir_path,
         from_page=from_page,

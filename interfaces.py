@@ -3,6 +3,9 @@ from collections.abc import Sequence
 from enum import Enum, IntEnum
 from typing import List, Optional, Union
 
+import fitz
+from fitz import Page
+
 
 class PDFContentType(IntEnum):
     TEXT = 0
@@ -51,6 +54,23 @@ class AbstractDoublyLinkedList(Sequence, ABC):
         return self.nodes[index]
 
 
+class AbstractProcessor(ABC):
+    content: AbstractDoublyLinkedList[AbstractNode]
+    result: List
+    unknown_fonts: List
+
+    @staticmethod
+    @abstractmethod
+    def pre_processor(text: str) -> str: ...
+
+    @staticmethod
+    @abstractmethod
+    def post_processor(text: str) -> str: ...
+
+    @abstractmethod
+    def fetch_content(self): ...
+
+
 class TagRenderFormat(Enum):
     LEFT_TAG_ONLY = 1
     RIGHT_TAG_ONLY = 2
@@ -91,3 +111,38 @@ class AbstractArena(AbstractDoublyLinkedList, AbstractNode):
 
     @abstractmethod
     def prepare_body(self) -> None: raise NotImplementedError
+
+
+class AbstractPDFBackend(ABC):
+    from_page: int
+    to_page: int
+    source_path: str
+    output_dir_path: str
+    processor: AbstractProcessor
+
+    @abstractmethod
+    def fetch_pages(self): ...
+
+    @abstractmethod
+    def handle_block(self, doc, page, block) -> List[str]: ...
+
+    @abstractmethod
+    def get_image(self, image: bytes, filename: str, ext: str): ...
+
+    @abstractmethod
+    def formatted_image(self, image_path: str, description: str): ...
+
+    @abstractmethod
+    def load_unknown_fonts(self): ...
+
+    @abstractmethod
+    def create_page(self, page) -> str: ...
+
+    @abstractmethod
+    def save_page(self, page_number: int, page: str): ...
+
+
+class AbstractBoris(ABC):
+
+    @abstractmethod
+    def initial_boris(self): ...

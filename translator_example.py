@@ -362,43 +362,49 @@ if __name__ == '__main__':
         sleep_secs=2
     )
 
-    # import here only for demonstration
-    import fonts
-    from boris import MarkdownBoris
-
-    # There are AVAIlABLE_FONTS_FOR_MAPPING fonts which we will use
-    # for choosing available for translate fonts. For example:
-    # images and code is not available for translating
-    translatable_fonts = fonts.AVAIlABLE_FONTS_FOR_MAPPING
-    translatable_fonts.remove(fonts.Image)
-    translatable_fonts.remove(fonts.Code)
+    from processor import MarkdownProcessor
 
 
-    def pre_processing(self, text: str):
-        # we don't care about non-secure global var
-        # cuz it making small i/o bound job
-        global translator
-        translated_text = translator.translate_sync(text)
-        print(f"---- {text}")
-        print(f"---- {translated_text}")
-        print("------------\n")
-        return translated_text
+    class TranslatableContentProcessor(MarkdownProcessor):
+        ...
 
-
-    for font in translatable_fonts:
-        # then for each caught font, we patch them pre_processing method
-        # which will call a translation text method
-        font.pre_processing = pre_processing
-
-        # then we need to remove old fonts for font module and set patched fonts
-        delattr(fonts, font.__name__)
-        setattr(fonts, font.__name__, font)
-
-    # initialize Boris and make him doing his job
-    boris = MarkdownBoris(
-        source_path=pdf_absolute_path,
-        output_dir_path=output_dir_path,
-        from_page=from_page,
-        to_page=to_page
-    )
-    boris.fetch_pages()
+    # # import here only for demonstration
+    # import fonts
+    # from boris import Boris
+    #
+    # # There are AVAIlABLE_FONTS_FOR_MAPPING fonts which we will use
+    # # for choosing available for translate fonts. For example:
+    # # images and code is not available for translating
+    # translatable_fonts = fonts.AVAIlABLE_FONTS_FOR_MAPPING
+    # translatable_fonts.remove(fonts.Image)
+    # translatable_fonts.remove(fonts.Code)
+    #
+    #
+    # def pre_processing(self, text: str):
+    #     # we don't care about non-secure global var
+    #     # cuz it making small i/o bound job
+    #     global translator
+    #     translated_text = translator.translate_sync(text)
+    #     print(f"---- {text}")
+    #     print(f"---- {translated_text}")
+    #     print("------------\n")
+    #     return translated_text
+    #
+    #
+    # for font in translatable_fonts:
+    #     # then for each caught font, we patch them pre_processing method
+    #     # which will call a translation text method
+    #     font.pre_processing = pre_processing
+    #
+    #     # then we need to remove old fonts for font module and set patched fonts
+    #     delattr(fonts, font.__name__)
+    #     setattr(fonts, font.__name__, font)
+    #
+    # # initialize Boris and make him doing his job
+    # boris = Boris(
+    #     source_path=pdf_absolute_path,
+    #     output_dir_path=output_dir_path,
+    #     from_page=from_page,
+    #     to_page=to_page
+    # )
+    # boris.fetch_pages()

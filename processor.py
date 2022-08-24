@@ -1,15 +1,12 @@
-import json
-import os
-from json import JSONDecodeError
-from typing import Generator
+from typing import Generator, List
 
+from interfaces import AbstractProcessor
 from utils import (
     DoublyLinkedList, ContentNode, Arena
 )
-import fonts
 
 
-class ContentProcessor:
+class MarkdownProcessor(AbstractProcessor):
 
     def __init__(self, content: DoublyLinkedList[ContentNode]):
         self.content: DoublyLinkedList[ContentNode] = content
@@ -21,7 +18,7 @@ class ContentProcessor:
         return text
 
     @staticmethod
-    def post_processor(text: str):
+    def post_processor(text: List[str]):
         return text
 
     def fetch_content(self):
@@ -47,8 +44,7 @@ class ContentProcessor:
 
             pre_proceed = self.pre_processor(prepared)
             proceed = render_generator.send(pre_proceed)
-            post_proceed = self.post_processor(proceed)
 
-            self.result.append(post_proceed)
+            self.result.append(proceed)
 
-        return self.result
+        return self.post_processor(self.result)
