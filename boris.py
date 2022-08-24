@@ -2,6 +2,7 @@ import os
 import json
 from abc import ABC, abstractmethod
 from json import JSONDecodeError
+from types import NoneType
 from typing import List, Optional, Tuple
 
 import fitz  # import the bindings
@@ -57,9 +58,16 @@ class AbstractBoris(ABC):
 
 class MarkdownBoris(AbstractBoris):
 
-    def __init__(self, source_path: str, output_dir_path: str):
+    def __init__(self,
+                 source_path: str,
+                 output_dir_path: str,
+                 from_page: int = 0,
+                 to_page: int = 0):
         self.source_path = source_path
         self.output_dir_path = output_dir_path
+        self.from_page: int = int(from_page)
+        # self.to_page: int = int(to_page)
+
         self.book_font_sizes = set()
         self.unknown_fonts_map_filepath = lambda: os.path.join(
             self.output_dir_path, 'unknown_fonts_map.json'
@@ -70,10 +78,14 @@ class MarkdownBoris(AbstractBoris):
         self.initial_boris()
 
     def initial_boris(self):
+
         try:
             self.doc: fitz.Document = fitz.open(self.source_path)  # open document
         except RuntimeError as e:
             exit(f'pdf_path param is invalid. unknown path {self.source_path}')
+
+        # if not self.to_page:
+        #     self.to_page = int(self.doc.page_count)
 
         if not os.path.isdir(self.output_dir_path):
             os.mkdir(self.output_dir_path)
@@ -87,8 +99,7 @@ class MarkdownBoris(AbstractBoris):
         self.load_unknown_fonts()
 
     def fetch_pages(self):
-
-        for page in self.doc:
+        for page in self.doc.pages(start=self.from_page):
             page_result = self.create_page(page)
 
             self.save_page(page.number, page_result)
@@ -242,6 +253,5 @@ class MarkdownBoris(AbstractBoris):
         )
 
         markdown_dict: List[str] = self.handle_block(self.doc, page, blocks)
-        print(markdown_dict)
         markdown_string = " ".join(markdown_dict)
         return markdown_string
