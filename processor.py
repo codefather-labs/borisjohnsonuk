@@ -16,6 +16,14 @@ class ContentProcessor:
         self.result = []
         self.unknown_fonts = []
 
+    @staticmethod
+    def pre_processor(text: str):
+        return text
+
+    @staticmethod
+    def post_processor(text: str):
+        return text
+
     def fetch_content(self):
         """
             I want to get a behavior
@@ -37,8 +45,10 @@ class ContentProcessor:
             render_generator: Generator = arena.render()
             is_code, prepared = next(render_generator)
 
-            prepared = render_generator.send(prepared)
+            pre_proceed = self.pre_processor(prepared)
+            proceed = render_generator.send(pre_proceed)
+            post_proceed = self.post_processor(proceed)
 
-            self.result.append(prepared)
+            self.result.append(post_proceed)
 
         return self.result
