@@ -10,7 +10,7 @@ from fitz import Page
 from fitz.utils import get_image_info
 
 from utils import FileDescriptor, DoublyLinkedList, ContentNode
-from processor import MarkdownProcessor
+from processor import ContentProcessor
 from fonts import flags_decomposer
 from interfaces import PDFContentType, AbstractBoris, AbstractPDFBackend, AbstractProcessor
 import fonts
@@ -42,6 +42,7 @@ class MuPDFBackend(AbstractPDFBackend):
         return f"`\n![{description}]({image_path})\n`"
 
     def fetch_pages(self):
+
         for page in self.doc.pages(start=self.from_page):
             page_result = self.create_page(page)
 
@@ -127,7 +128,7 @@ class MuPDFBackend(AbstractPDFBackend):
         cnt: DoublyLinkedList[ContentNode] = \
             DoublyLinkedList.from_list(data=content)
 
-        processor: AbstractProcessor = self.processor(content=cnt)
+        processor: ContentProcessor = self.processor(content=cnt)
 
         result_content = processor.fetch_content()
 
@@ -198,9 +199,11 @@ class Boris(AbstractBoris, MuPDFBackend):
         self.images_path = os.path.join(self.output_dir_path, 'images')
         self.initial_boris()
 
-        self.processor = MarkdownProcessor
+        self.processor: Optional[ContentProcessor] = None
 
     def initial_boris(self):
+        if not hasattr(self, 'processor'):
+            self.processor = ContentProcessor
 
         try:
             self.doc: fitz.Document = fitz.open(self.source_path)  # open document

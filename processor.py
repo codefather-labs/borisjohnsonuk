@@ -6,7 +6,7 @@ from utils import (
 )
 
 
-class MarkdownProcessor(AbstractProcessor):
+class ContentProcessor(AbstractProcessor):
 
     def __init__(self, content: DoublyLinkedList[ContentNode]):
         self.content: DoublyLinkedList[ContentNode] = content
