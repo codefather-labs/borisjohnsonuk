@@ -3,6 +3,7 @@ import argparse
 from types import NoneType
 
 from boris import Boris
+from processor import ContentProcessor
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

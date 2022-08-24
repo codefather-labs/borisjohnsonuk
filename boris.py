@@ -2,6 +2,7 @@ import os
 import json
 from abc import ABC
 from json import JSONDecodeError
+from types import NoneType
 
 from typing import List, Optional, Tuple, Callable
 
@@ -199,11 +200,9 @@ class Boris(AbstractBoris, MuPDFBackend):
         self.images_path = os.path.join(self.output_dir_path, 'images')
         self.initial_boris()
 
-        self.processor: Optional[ContentProcessor] = None
+        self.processor: Optional[ContentProcessor] = ContentProcessor
 
     def initial_boris(self):
-        if not hasattr(self, 'processor'):
-            self.processor = ContentProcessor
 
         try:
             self.doc: fitz.Document = fitz.open(self.source_path)  # open document
@@ -220,6 +219,6 @@ class Boris(AbstractBoris, MuPDFBackend):
             os.mkdir(self.images_path)
 
         self.unknown_fonts_file_descriptor = FileDescriptor(
-            filepath=self.unknown_fonts_map_filepath(),
+            filepath=self.unknown_fonts_map_filepath(), write_key='a'
         )
         self.load_unknown_fonts()
