@@ -262,7 +262,7 @@ class CustomDeepLCLI(DeepLCLI):
                 await self.start_browser()
                 await asyncio.sleep(self.sleep_secs)
 
-        hash = f"#{self.fr_lang}/{self.to_lang}/{script}"
+        hash = f"#{self.fr_lang}/{self.to_lang}/"
         await self.page.goto(f"https://www.deepl.com/translator" + hash)
 
         try:
