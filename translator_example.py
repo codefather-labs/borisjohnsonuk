@@ -321,7 +321,8 @@ class CustomDeepLCLI(DeepLCLI):
                 await asyncio.sleep(self.sleep_secs)
 
         # await asyncio.sleep(10)
-        print('------------\n')
+        if self.debug:
+            print('------------\n')
 
         await self.print(1)
         hash = f"#{self.fr_lang}/{self.to_lang}/"
@@ -438,7 +439,7 @@ if __name__ == '__main__':
     translator = CustomDeepLCLI(
         fr_lang='en',
         to_lang='ru',
-        headless=False,
+        headless=True,
         executable_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         timeout=150000,
         sleep_secs=2,
