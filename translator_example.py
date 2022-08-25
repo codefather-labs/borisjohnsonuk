@@ -188,7 +188,8 @@ class CustomDeepLCLI(DeepLCLI):
                  headless: bool = False,
                  executable_path: str = None,
                  timeout: int = 150000,
-                 sleep_secs: int = 1):
+                 sleep_secs: int = 1,
+                 debug: bool = True):
 
         super().__init__(fr_lang, to_lang)
         self.browser: Optional[Browser] = None
@@ -199,6 +200,7 @@ class CustomDeepLCLI(DeepLCLI):
         self.sleep_secs = sleep_secs
         self.loop = asyncio.get_event_loop()
         self.page: Optional[Page] = None
+        self.debug = debug
         # os.system('killall chrome')
 
     async def close_browser(self):
@@ -249,6 +251,10 @@ class CustomDeepLCLI(DeepLCLI):
     def recreate_content_page_sync(self):
         self.loop.run_until_complete(self.create_content_page(strong=True))
 
+    async def print(self, message: str):
+        if self.debug:
+            print(f"step: {message}")
+
     async def click_continue_button(self):
         # lmt__notification__blocked__pro__cta-2
         await self.page.evaluate(
@@ -285,37 +291,54 @@ class CustomDeepLCLI(DeepLCLI):
         except TimeoutError:
             raise DeepLCLIPageLoadError(f"Time limit exceeded. ({self.timeout}ms)")
 
-    async def translate(self, script: str) -> str:
+    async def translate(self, script: str, strong: bool = False) -> str:
         # if not self.internet_on():
         #     raise DeepLCLIPageLoadError("Your network seem to be offline.")
         # self._chk_script(script)
         # script = quote(script.replace("/", r"\/"), safe="")
 
-        return await self._translate(script)
+        return await self._translate(script, strong)
 
-    def translate_sync(self, script: str) -> str:
-        return self.loop.run_until_complete(self.translate(script))
+    async def get_result_strong(self):
+        try:
+            result = await self.page.evaluate(
+                """
+                document.querySelector("[dl-test='translator-target-input']").value
+                """
+            )
+            return result
+        except Exception:
+            print('strong result was crashed... skipping...')
+            return None
 
-    async def _translate(self, script: str) -> str:
+    def translate_sync(self, script: str, strong: bool = False) -> str:
+        return self.loop.run_until_complete(self.translate(script, strong))
+
+    async def _translate(self, script: str, strong: bool = False) -> str:
         if not self.is_started:
             while not self.is_started:
                 await self.start_browser()
                 await asyncio.sleep(self.sleep_secs)
 
         # await asyncio.sleep(10)
+        print('------------\n')
 
+        await self.print(1)
         hash = f"#{self.fr_lang}/{self.to_lang}/"
         await self.page.goto(f"https://www.deepl.com/translator" + hash)
 
+        await self.print(2)
         try:
             await self.page.waitForSelector("#dl_translator > div.lmt__text", timeout=self.timeout)
         except TimeoutError:
             raise DeepLCLIPageLoadError(f"Time limit exceeded. ({self.timeout}ms)")
 
+        await self.print(3)
         await self.page.click(selector="textarea")
         await self.page.type('textarea', script, {"delay": 0})
         await asyncio.sleep(self.sleep_secs * 2)
 
+        await self.print(4)
         try:
             await self.page.waitForFunction(
                 """
@@ -341,15 +364,24 @@ class CustomDeepLCLI(DeepLCLI):
             # """
             # )
         except TimeoutError:
+            await self.print(5)
             await self.click_continue_button()
+            await self.print(6)
+            if strong:
+                strong_result = await self.get_result_strong()
+                if type(strong_result) is str:
+                    return strong_result.rstrip("\n")
 
             raise DeepLCLIPageLoadError(f"Time limit exceeded. ({self.timeout}ms)")
 
+        await self.print(7)
         await asyncio.sleep(self.sleep_secs)
         output_area = await self.page.J('textarea[dl-test="translator-target-input"]')
         res = await self.page.evaluate("elm => elm.value", output_area)
 
+        await self.print(8)
         await self.click_continue_button()
+        await self.print(9)
         self.translated_fr_lang = str(
             await self.page.evaluate(
                 """() => {
@@ -358,6 +390,7 @@ class CustomDeepLCLI(DeepLCLI):
             )
         ).split("-")[0]
 
+        await self.print(10)
         self.translated_to_lang = str(
             await self.page.evaluate(
                 """() => {
@@ -367,13 +400,16 @@ class CustomDeepLCLI(DeepLCLI):
             )
         ).split("-")[0]
 
+        await self.print(11)
         await self.page.evaluate(
             """
             document.getElementById('translator-source-clear-button').click()
             """
         )
+        await self.print(12)
         await asyncio.sleep(self.sleep_secs)
         await self.click_continue_button()
+        await self.print(13)
 
         if type(res) is str:
             return res.rstrip("\n")
@@ -402,10 +438,11 @@ if __name__ == '__main__':
     translator = CustomDeepLCLI(
         fr_lang='en',
         to_lang='ru',
-        headless=True,
+        headless=False,
         executable_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         timeout=150000,
-        sleep_secs=2
+        sleep_secs=2,
+        debug=False
     )
 
     from boris import Boris, MuPDFBackend
@@ -428,13 +465,22 @@ if __name__ == '__main__':
 
             result = None
             translated = False
+            retry_times = 0
+            max_retries = 3
             while not translated:
                 try:
-                    result = translator.translate_sync(text)
+                    result = translator.translate_sync(text, strong=True)
                     translated = True
                 except (TimeoutError, DeepLCLIPageLoadError):
+
+                    if retry_times >= max_retries:
+                        print(f"----- something went wrong with translating text... \n"
+                              f"----- retries: {retry_times}. skipping...")
+                        return text
+
                     time.sleep(1)
                     translator.recreate_content_page_sync()
+                    retry_times += 1
 
             return result
 
