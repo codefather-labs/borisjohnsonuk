@@ -2,6 +2,7 @@ import argparse
 import os
 
 import asyncio
+import time
 from types import NoneType
 from urllib.parse import quote
 from urllib.request import urlopen
@@ -222,11 +223,11 @@ class CustomDeepLCLI(DeepLCLI):
                 # "--no-zygote",
             ]
             viewport = {
-                "width": 420,
-                "height": 915,
+                "width": 800,
+                "height": 600,
                 "deviceScaleFactor": 1.0,
-                "isMobile": True,
-                "hasTouch": True,
+                "isMobile": False,
+                "hasTouch": False,
                 "isLandscape": False
             }
 
@@ -245,8 +246,27 @@ class CustomDeepLCLI(DeepLCLI):
 
             await self.create_content_page()
 
-    async def create_content_page(self):
+    def recreate_content_page_sync(self):
+        self.loop.run_until_complete(self.create_content_page(strong=True))
+
+    async def click_continue_button(self):
+        # lmt__notification__blocked__pro__cta-2
+        await self.page.evaluate(
+            """
+            try {
+                let button = document.getElementsByClassName('lmt__notification__blocked__pro__cta-2')[0].click();
+            } catch (error) {
+                
+            }
+            """
+        )
+
+    async def create_content_page(self, strong: bool = False):
         self.page: Page
+
+        if strong:
+            await self.page.close()
+            self.page = None
 
         if not self.page:
             self.page: Page = await self.browser.newPage()
@@ -294,7 +314,7 @@ class CustomDeepLCLI(DeepLCLI):
 
         await self.page.click(selector="textarea")
         await self.page.type('textarea', script, {"delay": 0})
-        await asyncio.sleep(self.sleep_secs)
+        await asyncio.sleep(self.sleep_secs * 2)
 
         try:
             await self.page.waitForFunction(
@@ -321,12 +341,15 @@ class CustomDeepLCLI(DeepLCLI):
             # """
             # )
         except TimeoutError:
+            await self.click_continue_button()
+
             raise DeepLCLIPageLoadError(f"Time limit exceeded. ({self.timeout}ms)")
 
         await asyncio.sleep(self.sleep_secs)
         output_area = await self.page.J('textarea[dl-test="translator-target-input"]')
         res = await self.page.evaluate("elm => elm.value", output_area)
 
+        await self.click_continue_button()
         self.translated_fr_lang = str(
             await self.page.evaluate(
                 """() => {
@@ -350,6 +373,7 @@ class CustomDeepLCLI(DeepLCLI):
             """
         )
         await asyncio.sleep(self.sleep_secs)
+        await self.click_continue_button()
 
         if type(res) is str:
             return res.rstrip("\n")
@@ -401,7 +425,18 @@ if __name__ == '__main__':
         def translate(text: str):
             # we don't care about global cuz it doing small i/o job
             global translator
-            return translator.translate_sync(text)
+
+            result = None
+            translated = False
+            while not translated:
+                try:
+                    result = translator.translate_sync(text)
+                    translated = True
+                except (TimeoutError, DeepLCLIPageLoadError):
+                    time.sleep(1)
+                    translator.recreate_content_page_sync()
+
+            return result
 
         @staticmethod
         def post_processor(text: List[str]):
@@ -430,9 +465,13 @@ if __name__ == '__main__':
                         )
                         # clear text buf (preparing for next text chunk)
                         translatable_text_buf.clear()
+                        # result.append('\n\n')
+
                     # appending code or image
                     # after previously translated string
+
                     result.append(el)
+                    # result.append('\n\n')
 
             else:
                 # looking for unhandled translatable text chunks
