@@ -12,6 +12,7 @@ from pyppeteer.browser import Browser  # type: ignore[import]
 from pyppeteer.errors import TimeoutError  # type: ignore[import]
 from pyppeteer.launcher import launch  # type: ignore[import]
 from pyppeteer.page import Page  # type: ignore[import]
+from pyppeteer.target import Target
 
 
 class DeepLCLIError(Exception):
@@ -209,7 +210,7 @@ class CustomDeepLCLI(DeepLCLI):
         if not self.is_started:
             """Throw a request."""
             args = [
-                "--disable-blink-features=AutomationControlled",
+                # "--disable-blink-features=AutomationControlled",
                 "--enable-javascript",
                 "--enable-extensions",
                 # "--single-process",
@@ -220,31 +221,49 @@ class CustomDeepLCLI(DeepLCLI):
                 # "--disable-gpu",
                 # "--no-zygote",
             ]
+            viewport = {
+                "width": 420,
+                "height": 915,
+                "deviceScaleFactor": 1.0,
+                "isMobile": True,
+                "hasTouch": True,
+                "isLandscape": False
+            }
 
             self.browser: Browser = await launch(
                 headless=False,
                 executablePath=self.executable_path,
-                ignoreDefaultArgs=['--enable-automation'],
+                ignoreDefaultArgs=['--enable-automation', '--AutomationControlled'],
                 useAutomationExtensions=False,
+                defaultViewport=viewport,
                 args=args,
             )
 
             self.is_started = True
+            for page in await self.browser.pages():
+                self.page = page
 
+            await self.create_content_page()
+
+    async def create_content_page(self):
+        self.page: Page
+
+        if not self.page:
             self.page: Page = await self.browser.newPage()
 
-            userAgent = (
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6)"
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/77.0.3864.0 Safari/537.36"
-            )
-            await self.page.setUserAgent(userAgent)
-            hash = f"#{self.fr_lang}/{self.to_lang}"
-            await self.page.goto("https://www.deepl.com/translator" + hash)
-            try:
-                self.page.waitForSelector("#dl_translator > div.lmt__text", timeout=self.timeout)
-            except TimeoutError:
-                raise DeepLCLIPageLoadError(f"Time limit exceeded. ({self.timeout}ms)")
+        user_agent = (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6)"
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/77.0.3864.0 Safari/537.36"
+        )
+
+        await self.page.setUserAgent(user_agent)
+        hash = f"#{self.fr_lang}/{self.to_lang}"
+        await self.page.goto("https://www.deepl.com/translator" + hash)
+        try:
+            await self.page.waitForSelector("#dl_translator > div.lmt__text", timeout=self.timeout)
+        except TimeoutError:
+            raise DeepLCLIPageLoadError(f"Time limit exceeded. ({self.timeout}ms)")
 
     async def translate(self, script: str) -> str:
         # if not self.internet_on():
@@ -263,6 +282,8 @@ class CustomDeepLCLI(DeepLCLI):
                 await self.start_browser()
                 await asyncio.sleep(self.sleep_secs)
 
+        # await asyncio.sleep(10)
+
         hash = f"#{self.fr_lang}/{self.to_lang}/"
         await self.page.goto(f"https://www.deepl.com/translator" + hash)
 
@@ -272,7 +293,7 @@ class CustomDeepLCLI(DeepLCLI):
             raise DeepLCLIPageLoadError(f"Time limit exceeded. ({self.timeout}ms)")
 
         await self.page.click(selector="textarea")
-        await self.page.type('textarea', script)
+        await self.page.type('textarea', script, {"delay": 0})
         await asyncio.sleep(self.sleep_secs)
 
         try:
@@ -385,23 +406,44 @@ if __name__ == '__main__':
         @staticmethod
         def post_processor(text: List[str]):
             result = []
-            for el in text:
-                # we want ot translate only common text.
-                # Not code blocks or images lol.
-                # Translator ignore Keywords with tag '`' - this way we need
-                translated = False
 
-                if '```' not in el and '![' not in el:
+            def is_ready_for_translate(x) -> bool:
+                return '```' not in x and '![' not in x
 
-                    while not translated:
-                        try:
-                            el = TranslatableContentProcessor.translate(el)
-                            translated = True
-                        except TimeoutError:
-                            ...
-                    ...
+            translatable_text_buf = []
+            while text:
+                el = text.pop(0)
 
-                result.append(el)
+                if is_ready_for_translate(el):
+                    translatable_text_buf.append(el)
+
+                else:
+                    # send previously saved translatable text buf as string
+                    # to translate backend,
+                    # then append translated string to result
+                    if translatable_text_buf:
+                        translatable_string = " ".join(translatable_text_buf)
+                        result.append(
+                            TranslatableContentProcessor.translate(
+                                translatable_string
+                            )
+                        )
+                        # clear text buf (preparing for next text chunk)
+                        translatable_text_buf.clear()
+                    # appending code or image
+                    # after previously translated string
+                    result.append(el)
+
+            else:
+                # looking for unhandled translatable text chunks
+                # which was exists in translatable_text_buf but
+                # main cycle was done, and lost them out from cycle control
+                if translatable_text_buf:
+                    result.append(
+                        TranslatableContentProcessor.translate(
+                            " ".join(translatable_text_buf)
+                        )
+                    )
 
             return result
 
