@@ -199,7 +199,7 @@ class CustomDeepLCLI(DeepLCLI):
         self.sleep_secs = sleep_secs
         self.loop = asyncio.get_event_loop()
         self.page: Optional[Page] = None
-        os.system('killall chrome')
+        # os.system('killall chrome')
 
     async def close_browser(self):
         await self.browser.close()
