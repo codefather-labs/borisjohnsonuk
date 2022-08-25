@@ -13,7 +13,6 @@ from pyppeteer.browser import Browser  # type: ignore[import]
 from pyppeteer.errors import TimeoutError  # type: ignore[import]
 from pyppeteer.launcher import launch  # type: ignore[import]
 from pyppeteer.page import Page  # type: ignore[import]
-from pyppeteer.target import Target
 
 
 class DeepLCLIError(Exception):
@@ -215,13 +214,14 @@ class CustomDeepLCLI(DeepLCLI):
                 "--enable-javascript",
                 "--enable-extensions",
                 # "--single-process",
-                # "--kiosk",
                 # "--no-sandbox",
                 # "--single-process",
                 # "--disable-dev-shm-usage",
-                # "--disable-gpu",
                 # "--no-zygote",
             ]
+            if self.headless:
+                args.append("--disable-gpu")
+
             viewport = {
                 "width": 800,
                 "height": 600,
@@ -232,7 +232,7 @@ class CustomDeepLCLI(DeepLCLI):
             }
 
             self.browser: Browser = await launch(
-                headless=False,
+                headless=self.headless,
                 executablePath=self.executable_path,
                 ignoreDefaultArgs=['--enable-automation', '--AutomationControlled'],
                 useAutomationExtensions=False,
@@ -402,7 +402,7 @@ if __name__ == '__main__':
     translator = CustomDeepLCLI(
         fr_lang='en',
         to_lang='ru',
-        headless=False,
+        headless=True,
         executable_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         timeout=150000,
         sleep_secs=2
