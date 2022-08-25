@@ -314,13 +314,23 @@ class CustomDeepLCLI(DeepLCLI):
     def translate_sync(self, script: str, strong: bool = False) -> str:
         return self.loop.run_until_complete(self.translate(script, strong))
 
+    async def try_one(self, coro):
+        try:
+            return await coro
+        except TimeoutError:
+            await self.click_continue_button()
+            if strong:
+                strong_result = await self.get_result_strong()
+                if type(strong_result) is str:
+                    return strong_result.rstrip("\n")
+
+            return DeepLCLIPageLoadError(f"Time limit exceeded. ({self.timeout}ms)")
+
     async def _translate(self, script: str, strong: bool = False) -> str:
         if not self.is_started:
             while not self.is_started:
                 await self.start_browser()
-                await asyncio.sleep(self.sleep_secs)
 
-        # await asyncio.sleep(10)
         if self.debug:
             print('------------\n')
 
@@ -337,46 +347,35 @@ class CustomDeepLCLI(DeepLCLI):
         await self.print(3)
         await self.page.click(selector="textarea")
         await self.page.type('textarea', script, {"delay": 0})
-        await asyncio.sleep(self.sleep_secs * 2)
 
         await self.print(4)
-        try:
-            await self.page.waitForFunction(
-                """
-                () => document.querySelector(
-                'textarea[dl-test=translator-target-input]').value !== ""
-            """, timeout=self.timeout
-            )
 
-            await self.page.waitForFunction(
+        result = await self.try_one(self.page.waitForFunction(
+            """
+            () => document.querySelector(
+            'textarea[dl-test=translator-target-input]').value !== ""
+        """, timeout=self.timeout
+        ))
+        if isinstance(result, str):
+            return result
+
+        result = await self.try_one(self.page.waitForFunction(
+            """
+            () => document.querySelector("[dl-test='translator-source-input']") !== null
+        """, timeout=self.timeout
+        ))
+        if isinstance(result, str):
+            return result
+
+        while await self.page.evaluate(
                 """
-                () => !document.querySelector(
+                document.querySelector(
                 'textarea[dl-test=translator-target-input]').value.includes("[...]")
-            """, timeout=self.timeout
-            )
-            await self.page.waitForFunction(
                 """
-                () => document.querySelector("[dl-test='translator-source-input']") !== null
-            """, timeout=self.timeout
-            )
-            # await page.waitForFunction(
-            #     """
-            #     () => document.querySelector("[dl-test='translator-target-lang']") !== null
-            # """
-            # )
-        except TimeoutError:
-            await self.print(5)
-            await self.click_continue_button()
-            await self.print(6)
-            if strong:
-                strong_result = await self.get_result_strong()
-                if type(strong_result) is str:
-                    return strong_result.rstrip("\n")
-
-            raise DeepLCLIPageLoadError(f"Time limit exceeded. ({self.timeout}ms)")
+        ):
+            await asyncio.sleep(0.1)
 
         await self.print(7)
-        await asyncio.sleep(self.sleep_secs)
         output_area = await self.page.J('textarea[dl-test="translator-target-input"]')
         res = await self.page.evaluate("elm => elm.value", output_area)
 
@@ -408,7 +407,6 @@ class CustomDeepLCLI(DeepLCLI):
             """
         )
         await self.print(12)
-        await asyncio.sleep(self.sleep_secs)
         await self.click_continue_button()
         await self.print(13)
 
@@ -441,7 +439,7 @@ if __name__ == '__main__':
         to_lang='ru',
         headless=True,
         executable_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-        timeout=150000,
+        timeout=15000,
         sleep_secs=2,
         debug=False
     )
