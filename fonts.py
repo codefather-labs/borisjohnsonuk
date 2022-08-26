@@ -1,4 +1,4 @@
-from borisjohnsonuk.interfaces import AbstractTag, TagRenderFormat
+from interfaces import AbstractTag, TagRenderFormat
 
 
 class FontTag(AbstractTag):

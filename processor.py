@@ -1,7 +1,7 @@
 from typing import Generator, List
 
-from borisjohnsonuk.interfaces import AbstractProcessor
-from borisjohnsonuk.utils import (
+from interfaces import AbstractProcessor
+from utils import (
     DoublyLinkedList, ContentNode, Arena
 )
 

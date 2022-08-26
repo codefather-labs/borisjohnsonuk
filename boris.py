@@ -4,14 +4,11 @@ from typing import Optional
 
 import fitz  # import the bindings
 
-from borisjohnsonuk.utils import FileDescriptor, DoublyLinkedList, ContentNode
-from borisjohnsonuk.processor import ContentProcessor
-from borisjohnsonuk.fonts import flags_decomposer
-from borisjohnsonuk.interfaces import (
-    PDFContentType, AbstractBoris, AbstractPDFBackend, AbstractProcessor
-)
-from borisjohnsonuk import fonts
-from borisjohnsonuk.backends import MuPDFBackend
+from utils import FileDescriptor
+from processor import ContentProcessor
+from interfaces import AbstractBoris
+
+from backends import MuPDFBackend
 
 
 class Boris(AbstractBoris, MuPDFBackend):

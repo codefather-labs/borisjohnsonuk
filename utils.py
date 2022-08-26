@@ -3,10 +3,10 @@ from collections.abc import Sequence
 from io import TextIOWrapper
 from typing import Optional, Union, List, Generator
 
-from borisjohnsonuk.interfaces import (
+from interfaces import (
     AbstractTag, AbstractArena, AbstractDoublyLinkedList, BaseContentNode, AbstractNode
 )
-from borisjohnsonuk.fonts import (
+from fonts import (
     FONT_MAP, FontTag, Image, FONT_SIZE_SIGNATURE_MAP, TITLE_SIZE_MIN, TITLE_SIZE_MAX, Code
 )
 

@@ -1,1 +1,1 @@
-from borisjohnsonuk.backends.mupdf import MuPDFBackend
+from backends.mupdf import MuPDFBackend

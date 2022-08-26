@@ -2,8 +2,8 @@ import os
 import argparse
 from types import NoneType
 
-from borisjohnsonuk import Boris
-from borisjohnsonuk.processor import ContentProcessor
+from boris import Boris
+from processor import ContentProcessor
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

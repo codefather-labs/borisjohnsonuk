@@ -7,10 +7,10 @@ import fitz  # import the bindings
 from fitz import Page
 from fitz.utils import get_image_info
 
-from borisjohnsonuk import ContentProcessor
-from borisjohnsonuk.interfaces import AbstractPDFBackend, PDFContentType
-from borisjohnsonuk.utils import FileDescriptor, DoublyLinkedList, ContentNode
-from borisjohnsonuk import fonts
+from processor import ContentProcessor
+from interfaces import AbstractPDFBackend, PDFContentType
+from utils import FileDescriptor, DoublyLinkedList, ContentNode
+import fonts
 
 
 class MuPDFBackend(AbstractPDFBackend):
