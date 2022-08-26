@@ -450,7 +450,7 @@ if __name__ == '__main__':
         executable_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         timeout=15000,
         sleep_secs=2,
-        debug=True
+        debug=False
     )
 
     from boris import Boris, MuPDFBackend
