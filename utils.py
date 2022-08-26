@@ -3,8 +3,12 @@ from collections.abc import Sequence
 from io import TextIOWrapper
 from typing import Optional, Union, List, Generator
 
-from interfaces import AbstractTag, AbstractArena, AbstractDoublyLinkedList, BaseContentNode, AbstractNode
-from fonts import FONT_MAP, FontTag, Image, FONT_SIZE_SIGNATURE_MAP, TITLE_SIZE_MIN, TITLE_SIZE_MAX, Code
+from borisjohnsonuk.interfaces import (
+    AbstractTag, AbstractArena, AbstractDoublyLinkedList, BaseContentNode, AbstractNode
+)
+from borisjohnsonuk.fonts import (
+    FONT_MAP, FontTag, Image, FONT_SIZE_SIGNATURE_MAP, TITLE_SIZE_MIN, TITLE_SIZE_MAX, Code
+)
 
 
 class ContentNode(BaseContentNode):
