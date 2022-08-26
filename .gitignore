@@ -50,3 +50,4 @@ Thumbs.db
 venv
 result/
 pages/
+*_example.py
