@@ -185,22 +185,21 @@ class CustomDeepLCLI(DeepLCLI):
     def __init__(self,
                  fr_lang: str,
                  to_lang: str,
-                 headless: bool = False,
                  executable_path: str = None,
                  timeout: int = 150000,
                  sleep_secs: int = 1,
-                 debug: bool = True):
+                 debug: bool = False):
 
         super().__init__(fr_lang, to_lang)
         self.browser: Optional[Browser] = None
         self.is_started = False
-        self.headless = headless
         self.executable_path: Optional[str] = executable_path
         self.timeout = timeout
         self.sleep_secs = sleep_secs
         self.loop = asyncio.get_event_loop()
         self.page: Optional[Page] = None
         self.debug = debug
+        self.headless = False if self.debug else True
         # os.system('killall chrome')
 
     async def close_browser(self):
@@ -359,6 +358,8 @@ class CustomDeepLCLI(DeepLCLI):
         if isinstance(result, str):
             return result
 
+        await self.print(5)
+
         result = await self.try_one(self.page.waitForFunction(
             """
             () => document.querySelector("[dl-test='translator-source-input']") !== null
@@ -367,15 +368,24 @@ class CustomDeepLCLI(DeepLCLI):
         if isinstance(result, str):
             return result
 
+        await self.print(6)
+
+        retry_times = 1
         while await self.page.evaluate(
                 """
                 document.querySelector(
                 'textarea[dl-test=translator-target-input]').value.includes("[...]")
                 """
         ):
-            await asyncio.sleep(0.1)
+            if retry_times >= 5:
+                if "[...]" in script:
+                    await self.print(f"7.1, found: [...] signature in source...")
+                    break
 
-        await self.print(7)
+            await asyncio.sleep(5)
+            await self.print(f"7, retry time: {retry_times} ...")
+            retry_times += 1
+
         output_area = await self.page.J('textarea[dl-test="translator-target-input"]')
         res = await self.page.evaluate("elm => elm.value", output_area)
 
@@ -437,11 +447,10 @@ if __name__ == '__main__':
     translator = CustomDeepLCLI(
         fr_lang='en',
         to_lang='ru',
-        headless=True,
         executable_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         timeout=15000,
         sleep_secs=2,
-        debug=False
+        debug=True
     )
 
     from boris import Boris, MuPDFBackend
