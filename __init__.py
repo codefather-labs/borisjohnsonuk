@@ -1,1 +1,2 @@
-from borisjohnsonuk.boris import Boris, MuPDFBackend
+from boris import Boris
+from backends.mupdf import MuPDFBackend

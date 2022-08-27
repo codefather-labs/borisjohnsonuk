@@ -51,3 +51,5 @@ venv
 result/
 pages/
 *_example.py
+config.json
+source.pdf
